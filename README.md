@@ -38,6 +38,7 @@ Setting up the filesystem
         include("Javascript/cc/load.js");
 
 Wiring up the code
+    
     - an apps Playlist will need modified to include a new Captions object
     - a unique CaptionsEntry object can be added to each Captions object
     - a unique Captions object can be added to each PlaylistEntry object
