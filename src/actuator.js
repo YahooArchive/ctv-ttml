@@ -9,10 +9,8 @@ KONtx.cc = (function kontx_cc_singleton() {
 	Theme.keys.rootRaw = Theme.keys.root.replace("script://", "");
 	//
 	KONtx.config.basePath = KONtx.config.basePath.replace("script://", "");
-	// TODO: validate this path
-	var modulePath = KONtx.config.ccModulePath || (KONtx.config.basePath + "src/cc/");
     // a 2 produces no dumps but more than function calls
-    common.debug.level = _production ? 0 : 2;
+    common.debug.level = _production ? 0 : 1;
     // this is handy so we can view more verobse messages from the mediaplayer
     common.debug.MEDIA = (_production && common.debug.level[3]) ? true : false;
 	//
@@ -22,7 +20,7 @@ KONtx.cc = (function kontx_cc_singleton() {
 		//
 		name: "CC",
 		//
-		version: "0.0.16",
+		version: "0.0.18",
 		//
 		log: common.debug.log,
 		//
@@ -34,8 +32,8 @@ KONtx.cc = (function kontx_cc_singleton() {
             languageStorageKey: "captionsLanguage",
             activatedStorageKey: "captionsActivated",
             //
-			modulePath: modulePath,
-			assetPath: modulePath + "assets/" + (screen.width + "x" + screen.height) + "/",
+			modulePath: KONtx.config.ccModulePath,
+			assetPath: KONtx.config.ccModulePath + "assets/" + (screen.width + "x" + screen.height) + "/",
             // this will be auto-included during the load of the actuator file
             // not available in current frameworks
             include: [
@@ -52,7 +50,12 @@ KONtx.cc = (function kontx_cc_singleton() {
 					pointer: ["KONtx.control.CaptionsOverlay"],
 					location: "ads-source-controls"
 				},
-			]
+			],
+            // setting this will shave off the specified number of seconds from the begin and end times
+            // this will allow the arbitrary testing of content from any time
+            // example: to test entries that start at 20 minutes use (20 * 60)
+            longFormContentTimingReductionAdjustment: 0,
+            //
 		},
         //
         playerStatesLegend: (function () {

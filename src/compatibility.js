@@ -75,6 +75,130 @@ if (typeof(common) === "undefined") {
 			
 		};
         //
+		common.typeOf = function common_typeOf(source) {
+			
+			if (source == undefined) {
+				
+				return false;
+				
+			}
+			
+			switch (source.constructor) {
+				
+				case Object:
+					
+					return "object";
+				
+				case Array:
+					
+					return "array";
+				
+				case Number:
+					
+					return isFinite(source) ? "number" : false;
+				
+				case Glow:
+					
+					return "glow";
+				
+				case Date:
+					
+					return "date";
+				
+				case Function:
+					
+					return "function";
+				
+				default:
+					
+					if (typeof(source.length) === "number") {
+						
+						if (source.callee) {
+							
+							return "arguments";
+							
+						} else if (source.item) {
+							
+							return "collection";
+							
+						}
+						
+					}
+					
+					if (source.__instanceID || source._ktxID) {
+						
+						return "instance";
+						
+					}
+					
+					if (source.nodeName) {
+						
+						return source.nodeName;
+						
+					}
+					
+			}
+			
+			return typeof(source);
+			
+		};
+		//
+		common.isEmpty = function common_isEmpty(source) {
+			
+			if (source == null) {
+				
+				return true;
+				
+			}
+			
+			var type = common.typeOf(source);
+			
+			switch (type) {
+				
+				case "string":
+					
+					return (source.length > 0) ? false : true;
+				
+				case "number":
+					
+					return false;
+				
+				case "object":
+					
+					for (var property in source) {
+						
+						if (source.hasOwnProperty(property)) {
+							
+							return false;
+							
+						}
+						
+					}
+					
+					return true;
+				
+				default:
+					
+					return type ? false : true;
+				
+			}
+			
+		};
+        //
+        common.String = {};
+        //
+        common.String.trim = function common_String_trim(source) {
+            
+            return source.replace(/^\s+|\s+$/g, "");
+            
+        };
+        //
+        common.String.cleanWhitespace = function common_String_cleanWhitespace(source) {
+            
+            return common.String.trim(source.replace(/\s{2,}/g, " "));
+            
+        };
+        //
         common.Object = {};
         //
         common.Object.keys = function common_Object_keys(source) {

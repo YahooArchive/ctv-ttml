@@ -140,6 +140,21 @@ found in actuator.js as instanceVersion.
         execution of the provided callback function. if this is not implemented by the author the renderer will not be
         sent data nor will it be notified that there is data to display and will subsequently not display any captions.
     
+0.0.17
+    added KONtx.cc.config.longFormContentTimingReductionAdjustment which allows a dev to sepcify a number of minutes to
+        remove from the ttml entries list. this allows a dev to test different segments of the ttml document.
+        for instance, if we want to test the entries from 25 minutes - 30 minutes then we could set this property to
+        KONtx.cc.config.longFormContentTimingReductionAdjustment = 25 and regardless of what the mediaplayer time index
+        reports the captions will start playing from 25 minutes.
+    added common.typeOf to compatibility.js for <1.5 framework compatibility
+    added common.isEmpty to compatibility.js for <1.5 framework compatibility
+    changed parseInt calls to parseFloat calls to more accurately reflect the origin, extent, and fontSize properties
+    changed the default KONtx.media.Captions.parser to make a default yql call for 'select * from xml where url = <url>'
+    
+0.0.18
+    added extra parsing when flattening the paragraphs allowing us to do some light piecing together of span fragments
+    changed the KONtx.cc.config.longFormContentTimingReductionAdjustment to accept seconds instead of minutes
+    
 *******************************************************************************/
 /** Implementation Documentation ***********************************************
 

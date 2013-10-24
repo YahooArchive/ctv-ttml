@@ -93,7 +93,9 @@ KONtx.control.CaptionsOverlay = new KONtx.Class({
         head.layout.region = this.structureList(data.head, "layout.region");
         
         if (common.isEmpty(head.layout.region)) {
+            
             head.layout.region[this.config.defaultRegionId] = {};
+            
         }
         
         return head;
@@ -136,7 +138,7 @@ common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "processBody", "process
                 
                 entry.content = this.flattenEntryContent(entry);
                 
-common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "processBody", "entry[" + index + "]", common.dump(entry,5));
+common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "processBody", "entry[" + index + "]", common.dump(entry,5));
                 
                 entries.push(entry);
                 
@@ -152,45 +154,100 @@ common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "processBody", "complet
     },
     //
     structureList: function (data, namespace) {
-        var list = namespace.split(".");
-        var parent = data[list[0]];
-        var result = {};
-        var node = {};
-        var entry = [];
-        var index = 0;
-        var item = {};
-        var items = {};
         
-        if (parent) {
-            node = parent[list[1]];
-            if (node) {
-                // we know we only get a list or a single object
-                entry = (common.typeOf(node) ==  "array") ? node : [node];
-                index = 0;
-                item = {};
-                items = {};
-                
-                for (index = 0; index < entry.length; index++) {
-                    item = entry[index];
-                    items[item.id] = item;
-                    delete item.id;
+        var result = {};
+        
+        if (data) {
+            
+            var list = namespace.split(".");
+            var parent = data[list[0]];
+            var node = {};
+            var entry = [];
+            var index = 0;
+            var item = {};
+            var items = {};
+            
+            if (parent) {
+                node = parent[list[1]];
+                if (node) {
+                    // we know we only get a list or a single object
+                    entry = (common.typeOf(node) ==  "array") ? node : [node];
+                    index = 0;
+                    item = {};
+                    items = {};
+                    
+                    for (index = 0; index < entry.length; index++) {
+                        item = entry[index];
+                        items[item.id] = item;
+                        delete item.id;
+                    }
+                    
+                    result = items;
                 }
-                
-                result = items;
             }
         }
         
         return result;
+        
     },
     //
     flattenEntryContent: function (entry) {
         var content = "";
+        var contentList = [];
+        var item = null;
+        var type = null;
+        var index = 0;
         
-        if ("span" in entry) {
+        if ("content" in entry) {
             
-            if ("content" in entry.span) {
+            content = entry.content;
+            
+        } else if ("span" in entry) {
+            
+            if (common.typeOf(entry.span) == "array") {
                 
-                entry.content = entry.span.content;
+                contentList = [];
+                
+                for (index = 0; index < entry.span.length; index++) {
+                    
+                    item = entry.span[index];
+                    
+                    type = common.typeOf(item);
+                    
+                    switch (type) {
+                        
+                        case "string":
+                            
+                            contentList.push(item);
+                            
+                            break;
+                        
+                        case "object":
+                            
+                            if ("content" in item) {
+                                
+                                contentList.push(item.content);
+                                
+                            }
+                            
+                            break;
+                    }
+                    
+                }
+                
+                if (contentList.length) {
+                    
+                    content = contentList.join(" ");
+                    
+                }
+                
+            } else {
+                
+                if ("content" in entry.span) {
+                    
+                    content += entry.span.content;
+                    
+                }
                 
             }
             
@@ -204,11 +261,8 @@ common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "processBody", "complet
             
         }
         
-        if ("content" in entry) {
-            
-            content = entry.content.replace(/<br\/?>/g, "\n");
-            
-        }
+        // remove extra whitespace
+        content = common.String.cleanWhitespace(content);
         
         return content;
     },
@@ -304,9 +358,9 @@ common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "processBody", "complet
             
             originSplit = entry.origin.split(" ");
             
-            styles.hOffset = Math.floor(screen.width * (parseInt(originSplit[0]) / 100));
+            styles.hOffset = Math.floor(screen.width * (parseFloat(originSplit[0]) / 100));
             
-            styles.vOffset = Math.floor(screen.height * (parseInt(originSplit[1]) / 100));
+            styles.vOffset = Math.floor(screen.height * (parseFloat(originSplit[1]) / 100));
             
         } else if ("origin" in styles) {
             
@@ -314,9 +368,9 @@ common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "processBody", "complet
             
             originSplit = styles.origin.split(" ");
             
-            styles.hOffset = Math.floor(screen.width * (parseInt(originSplit[0]) / 100));
+            styles.hOffset = Math.floor(screen.width * (parseFloat(originSplit[0]) / 100));
             
-            styles.vOffset = Math.floor(screen.height * (parseInt(originSplit[1]) / 100));
+            styles.vOffset = Math.floor(screen.height * (parseFloat(originSplit[1]) / 100));
             
             delete styles.origin;
             
@@ -348,9 +402,8 @@ common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "processBody", "complet
             // of empty space on the right side of every text element. in order
             // to counter this effect we will not set the width specified by the
             // ttml
-            //styles.width = Math.ceil(screen.width * (parseInt(extentSplit[0]) / 100));
-            
-            styles.height = Math.ceil(screen.height * (parseInt(extentSplit[1]) / 100));
+            //styles.width = Math.ceil(screen.width * (parseFloat(extentSplit[0]) / 100));
+            styles.height = Math.ceil(screen.height * (parseFloat(extentSplit[1]) / 100));
             
         } else if ("extent" in styles) {
             
@@ -362,9 +415,9 @@ common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "processBody", "complet
             // of empty space on the right side of every text element. in order
             // to counter this effect we will not set the width specified by the
             // ttml
-            //styles.width = Math.ceil(screen.width * (parseInt(extentSplit[0]) / 100));
+            //styles.width = Math.ceil(screen.width * (parseFloat(extentSplit[0]) / 100));
             
-            styles.height = Math.ceil(screen.height * (parseInt(extentSplit[1]) / 100));
+            styles.height = Math.ceil(screen.height * (parseFloat(extentSplit[1]) / 100));
             
             delete styles.extent;
             
@@ -404,11 +457,11 @@ common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "processBody", "complet
                 // more notes please
                 if (("wrapOption" in styles) || !styles.height) {
                     
-                    styles.fontSize = Math.floor(this.config.fontSize * (parseInt(styles.fontSize) / 100));
+                    styles.fontSize = Math.floor(this.config.fontSize * (parseFloat(styles.fontSize) / 100));
                     
                 } else {
                     
-                    styles.fontSize = Math.floor(styles.height * (parseInt(styles.fontSize) / 100));
+                    styles.fontSize = Math.floor(styles.height * (parseFloat(styles.fontSize) / 100));
                     
                 }
                 
@@ -479,7 +532,15 @@ common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "processBody", "complet
             }
         }
         
-        return ((60 * 2) * Number(split[0])) + (60 * Number(split[1])) + Number(split[2]) + Number(fraction);
+        var modifier = 0;
+        if (!_PRODUCTION && KONtx.cc.config.longFormContentTimingReductionAdjustment && (common.typeOf(KONtx.cc.config.longFormContentTimingReductionAdjustment) == "number")) {
+            // setting this will shave off the specified number of minutes from the begin and end times
+            // this will allow the testing of content that is 30 minutes in at the 5 minute mark
+            // this is to be used to test ttml for long form content
+            modifier = KONtx.cc.config.longFormContentTimingReductionAdjustment;
+        }
+        
+        return ((60 * 2) * Number(split[0])) + (60 * Number(split[1])) + Number(split[2]) + Number(fraction) - modifier;
         
     },
     //
@@ -624,7 +685,7 @@ common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onDeactivate", "region
     onDataReceived: function (event) {
         
         if (event.type == "onDataReceived") {
-common.debug.level[1] && common.debug.log("onDataReceived","event",common.dump(event.payload));
+common.debug.level[3] && common.debug.log("onDataReceived","event",common.dump(event.payload));
             
             var data = event.payload.tt;
             
