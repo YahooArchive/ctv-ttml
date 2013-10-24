@@ -1,4 +1,39 @@
-TTML Normalization
+CC Module
 ========
 
-The purpose of this table is to take a TTML document and convert it to a well-defined JSON structure. The initial step is to remove all namespace references from the document. The next step is to flatten all of the paragraph tags to single line entries which can only contain the HTML break tag.
+ClosedCaptioning is supplied as an add-on module that will initially be embedded
+within a given application. The module itself will also be committed to the
+framework. When a framework which contains the cc module is published the
+embedded module will self-deprecate in favor of the framework provided module.
+
+Structure of the ClosedCaptioning module
+    
+    cc
+    |-- assets
+    |   `-- 960x540
+    |       |-- captions-42x33.png
+    |       `-- captions-active-42x33.png
+    |-- load.js
+    `-- src
+        |-- actuator.js
+        |-- compatibility.js
+        |-- controls.js
+        |-- implements.js
+        |-- manifest.js
+        `-- media.js
+        
+Setting up the filesystem
+    
+    1) Add the ClosedCaptioning module
+        // this can be put anywhere inside the Contents directory of an app
+        Contents/Javascript/cc
+    
+    2) Specify the local application path to the CC module
+        KONtx.config.ccModulePath = "Javascript/cc";
+    
+    3) Load the CC module
+        // typically this is loaded in the init.js
+        include("Framework/kontx/[REVISION]/src/all.js");
+        // this must be loaded after the framework is loaded
+        include("Javascript/cc/load.js");
+
