@@ -37,3 +37,25 @@ Setting up the filesystem
         // this must be loaded after the framework is loaded
         include("Javascript/cc/load.js");
 
+Wiring up the code
+    * an apps Playlist will need modified to include a new Captions object
+    * a unique CaptionsEntry object can be added to each Captions object
+    * a unique Captions object can be added to each PlaylistEntry object
+    * ttml data will need formatted to meet a specific schema
+    * a parsing routine can be used for format the ttml data
+    
+    captions = new KONtx.media.Captions();
+    captionsEntry = new KONtx.media.CaptionsEntry({
+        url: <location of ttml xml document>,
+        lang: <language for ttml>
+    });
+    captions.addEntry(captionsEntry);
+
+    playlist = new KONtx.media.Playlist(); 
+    playlistEntry = new KONtx.media.PlaylistEntry({
+        url: <location of the video>,
+        bitrate: <bitrate for video>,
+        captions: captions
+    });
+    playlist.addEntry(playlistEntry);
+
