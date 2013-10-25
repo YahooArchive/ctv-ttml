@@ -54,7 +54,7 @@ KONtx.cc = (function kontx_cc_singleton() {
             // setting this will shave off the specified number of seconds from the begin and end times
             // this will allow the arbitrary testing of content from any time
             // example: to test entries that start at 20 minutes use (20 * 60)
-            longFormContentTimingReductionAdjustment: 0,
+            longFormContentTimingReductionAdjustment: 60,
             //
 		},
         //

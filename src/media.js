@@ -114,7 +114,7 @@ common.debug.level[3] && common.debug.log("default parser");
             url: "http://query.yahooapis.com/v1/public/yql?format=json&q=" + query,
             success: function (xhr) {
                 var json = JSON.parse(xhr.responseText).query.results;
-common.debug.level[4] && KONtx.cc.log("CaptionsEntry", "fetchHead", "success", common.dump(json,7));
+common.debug.level[4] && KONtx.cc.log("CaptionsEntry", "fetchHead", "success", common.dump(json, 7));
                 callback(json);
             }
         });

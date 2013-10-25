@@ -1,0 +1,129 @@
+0.0.1
+    This version is the initial release.
+    Compliance (TTML 1.0)
+        Not referencing an ICS which means we cannot "claim" to be compliant
+        Support for parsing TTML 1.0 documents which meet content compliance
+            Our library does not imply content conformance since we are not supplying the content
+        In the process of determining minimum processor conformance based on DFXP Transformation Profile
+    Features
+        State
+            Provides a new button on the MediaPlayer Transport Overlay for toggling the activation state
+                On activation the MediaPlayer is paused until the TTML is downloaded, parsed, and starts sequencing
+                On deactivation the MediaPlayer is not paused
+                On reactivation the MediaPlayer follows the same path as a new activation
+            Support for persisting the activation state of closed captioning per user profile
+        Localization
+            Supoprt for "en" language only
+            No support for multi-language
+            No visual implementation of pop-up menu for selecting alternative languages
+        TTML Specification
+            Support for TTML "region" property (box model elements)
+            Support for TTML "content" property (text to be displayed)
+            Support for TTML "span" property (single nested content layer; essentially a span within a paragraph)
+            Support for TTML "style" property (limited support for style properties based on technical limitations, ie no formal CSS support)
+            Support for TTML "origin" property (position of element)
+            Support for TTML "extent" property (geometry of element)
+            Support for TTML "begin" property (start time of content display)
+            Support for TTML "end" property (end time of content display)
+            No support for inline content styling (a word inside a phrase which is graphically represeted differently than the rest of the phrase)
+        Transport Controls
+            Support for "play" control
+                On play of the MediaPlayer the Caption Controller is loaded, Caption Sequencer is started
+            Support for "pause" control
+                On pause of the MediaPlayer the Caption Sequencer pauses
+            Support for "stop" control
+                On stop of the MediaPlayer the Caption Controller is unloaded, Caption Sequencer is stopped, content is removed from screen
+            
+0.0.2
+    Fixed bug with default language setting
+    Updated documentation
+    Improved legacy framework compatibility
+    Removed common.String call in CaptionsOverlay
+    Added isPhysicalNetworkDown call for 1.3.10 frameworks
+    
+0.0.3
+    Fixed bug where sequencer could get off track when toggling cc on/off
+    Caching ttml data during state changes to improve performance
+    No longer generating all DOM regions at start up but instead doing it as needed to improve performance
+    Abstracting shared routines to KONtx.cc namespace to improve performance
+
+0.0.4
+    Fixed bug in PAUSE and STOP handlers which could freeze the sequence interval in the future
+    Removed lots of log statements to improve performance
+    Refined logging mechanism to improve performance
+    Cleaned up code
+    Abstracted shared routines to KONtx.cc namespace to improve performance
+    Merged single use methods
+    Added more ttml preprocessing to improve performance
+    
+0.0.5
+    Consolidated code paths in the captions overlay which reduces codesize and improves performance
+    Added hide view handler for removing region nodes from the view
+    Moved data normalization into subscription model to allow 3rd party implementers to have a shot at the data before it's used by the captions controller
+    Moved the "wait" logic for the player(which happens if we are in play mode but have not received data yet) into subscription model to allow 3rd party implementers to listen
+    Consolidated player handlers
+    Added defaults for the data property in the config for the overlay
+    Renamed some methods on the CC Controller
+    Fixed bug when leaving the player view which sometimes did not tear down the region nodes
+    Added payloads to the onActivate/onDeactivate publishers
+    Added payloads to the onTransportButtonPress publisher
+    
+0.0.6
+    Fixed bug where 3rd parties could overload the Playlist and PlaylistEntry objects if loading a mediaplayer patch file
+    
+0.0.7
+    Fixed bug where multiple CC buttons could be rendered in the transport overlay control
+    
+0.0.8
+    Fixed bug where previous state of CC would not be reflected in CC button in transport overlay if the button did not get enable(due to missing captions)
+    
+0.0.9
+    ** Didn't increment the actuator version up to 0.0.8 during last commit
+    Added publishers for onActivateClosedCaption and onDeactivateClosedCaption to the transport overlay
+    Replaced plublish on the cc button with a publish on the transport overlay
+    Replaced onViewStateChanged subscriber with a publish to onDeactivate
+    Added onPlayerKeyPress subscriber which listens to onControlStop from the mediaplayer and publishes onDeactivate
+    Fixed bug with cc overlay sticking on screen after the fullscreen view was hidden
+    Fixed bug with different behaviors between rc-stop, key stop, rc-back, and key back
+    Added legacy compatibility for < 1.6 mediaplayer events
+    
+0.0.10
+    Fixed bug where time index chunks were being incorrectly cast as strings resulting in improper timing
+    
+0.0.11
+    Based on a recomendation from operations we are now calculating the 4th timing segment and are rounding up(ceiling) which will cause some captions to delay by less than a second but will prevent the pre-emptive approach from showing captions too early possibly exposing spoilers
+    Removed delay in player when fetching ttml data
+    Fixed incorrect storage key name for activating CC
+    
+0.0.12
+    Updated controls to provide default region, layout, style, geometry for ttml documents that do not provide them
+    Adjusted default container element size to match the screensize
+    
+0.0.13
+    adding a null check when setting up the platform var because old widgets could be including a platform package that
+    would not load due to security issues(yahooSettings not available to non-yahoo-signed apps) and produce a global
+    platform var which is the object null
+
+0.0.14
+    removed a check which was preventing app level CC modules from overloading the transport control
+    added hooks to the transport control which allow it to update its state during a showview and respond to external activation and deactivation of CC
+    fixed bug when activating/deactivating CC before the mediaplayer has a playlist entry
+    adding default values for the captions object during the setup of the playlist. this was causing certain playlist setups to fail
+    added redundant checks when performing lookups on the internal _streams table in the mediaplayer
+
+0.0.15
+    changing platform.currentProfileData => currentProfileData to support CC module in unsigned apps on old samsung TVs
+    
+0.0.16
+    changed the Captions interface. now requires a parser to be implemented by the author. this parser must fetch and format ttml data into a well-defined JSON structure before sending that data, as an argument, through the execution of the provided callback function. if this is not implemented by the author the renderer will not be sent data nor will it be notified that there is data to display and will subsequently not display any captions.
+    
+0.0.17
+    added KONtx.cc.config.longFormContentTimingReductionAdjustment which allows a dev to sepcify a number of minutes to remove from the ttml entries list. this allows a dev to test different segments of the ttml document. for instance, if we want to test the entries from 25 minutes - 30 minutes then we could set this property to KONtx.cc.config.longFormContentTimingReductionAdjustment = 25 and regardless of what the mediaplayer time index reports the captions will start playing from 25 minutes.
+    added common.typeOf to compatibility.js for <1.5 framework compatibility
+    added common.isEmpty to compatibility.js for <1.5 framework compatibility
+    changed parseInt calls to parseFloat calls to more accurately reflect the origin, extent, and fontSize properties
+    changed the default KONtx.media.Captions.parser to make a default yql call for 'select * from xml where url = <url>'
+    
+0.0.18
+    added extra parsing when flattening the paragraphs allowing us to do some light piecing together of span fragments
+    changed the KONtx.cc.config.longFormContentTimingReductionAdjustment to accept seconds instead of minutes
