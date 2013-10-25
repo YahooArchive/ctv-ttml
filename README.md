@@ -1,15 +1,11 @@
 CC Module
 ========
 
-ClosedCaptioning is supplied as an add-on module that will initially be embedded within a given application. The module
-itself will also be committed to the framework. When a framework which contains the cc module is published the embedded
-module will self-deprecate in favor of the framework provided module.
+ClosedCaptioning is supplied as an add-on module that will be embedded within a given application. It will provide the
+ability to display TTML captions over streaming video.
 
-------------------------------------------------------------------------------------------------------------------------
-Obtaining the module
-------------------------------------------------------------------------------------------------------------------------
-You will need to grab a copy of the module. You can download it from github at the following location:
-https://github.com/yahoo/stv-ttml
+See the full documentation here:
+http://developer.yahoo.com/connectedtv/kontxapiref/YCTV_KONTX_CC.html
 
 ------------------------------------------------------------------------------------------------------------------------
 Structure of the module
@@ -30,16 +26,22 @@ Structure of the module
         `-- media.js
 
 ------------------------------------------------------------------------------------------------------------------------
+Obtaining the module
+------------------------------------------------------------------------------------------------------------------------
+You will need to grab a copy of the module source. You can download it from github at the following location:
+[https://github.com/yahoo/stv-ttml](https://github.com/yahoo/stv-ttml)
+
+------------------------------------------------------------------------------------------------------------------------
 Integrating the module
 ------------------------------------------------------------------------------------------------------------------------    
-    1) Add the ClosedCaptioning module
+    1. Add the ClosedCaptioning module
         // this can be put anywhere inside the Contents directory of an app
         Contents/Javascript/cc
     
-    2) Specify the local application path to the CC module
+    2. Specify the local application path to the CC module
         KONtx.config.ccModulePath = "Javascript/cc";
     
-    3) Load the CC module
+    3. Load the CC module
         // typically this is loaded in the init.js
         include("Framework/kontx/[REVISION]/src/all.js");
         // this must be loaded after the framework is loaded
@@ -55,9 +57,9 @@ Wiring up the code
 ------------------------------------------------------------------------------------------------------------------------
 A few changes will need made to your app to get captions integrated
 
-    1) A "Captions" object will need added to each "PlaylistEntry" object
-    2) A "CaptionsEntry" object will need added to each "Captions" object
-    3) TTML data may need formatted to meet a specific schema
+    1. A "Captions" object will need added to each "PlaylistEntry" object
+    2. A "CaptionsEntry" object will need added to each "Captions" object
+    3. TTML data may need formatted to meet a specific schema
 
 ------------------------------------------------------------------------------------------------------------------------    
 Wiring up the code - Method 1
@@ -135,8 +137,8 @@ each ODT.
     new KONtx.media.Captions({
         parser: function (url, callback) {
             // add your custom data table location (http://your table, store://your table)
-            var dataTable = "store://jMeilBMpXMGUqhpSTUtrzf";
-            var query = "use '" + dataTable + "' as normalizedTTML; select * from normalizedTTML where url='" + url + "'";  
+            var dataTable = "http://datatables.org/ctv/ttml/normalize/ctv.ttml.normalize.xml";
+            var query = "use '" + dataTable + "' as ttml; select * from ttml where url='" + url + "'";  
               
             KONtx.cc.fetch({  
                 url: "http://query.yahooapis.com/v1/public/yql?q=" + query + "&format=json",  
@@ -149,6 +151,12 @@ each ODT.
             }); 
         },
     })
+
+The ODT can be tested using the YQL console by inserting your ttml location. All of these give the same results.
+[http://developer.yahoo.com/yql/console/?q=use 'http://datatables.org/ctv/ttml/normalize/ctv.ttml.normalize.xml'; select * from ctv.ttml.normalize where url='<TTML LOCATION>'](http://developer.yahoo.com/yql/console/?q=use 'http://datatables.org/ctv/ttml/normalize/ctv.ttml.normalize.xml'; select * from ctv.ttml.normalize where url='<TTML LOCATION>')
+[http://developer.yahoo.com/yql/console/?q=use 'http://datatables.org/ctv/ttml/normalize/ctv.ttml.normalize.xml' as ttml; select * from ttml where url='<TTML LOCATION>'](http://developer.yahoo.com/yql/console/?q=use 'http://datatables.org/ctv/ttml/normalize/ctv.ttml.normalize.xml' as ttml; select * from ttml where url='<TTML LOCATION>')
+[http://developer.yahoo.com/yql/console/?q=select * from ctv.ttml.normalize where url='<TTML LOCATION>'&env=store://datatables.org/alltableswithkeys](http://developer.yahoo.com/yql/console/?q=select * from ctv.ttml.normalize where url='<TTML LOCATION>'&env=store://datatables.org/alltableswithkeys)
+
 
 ------------------------------------------------------------------------------------------------------------------------
 TTML Styling
@@ -185,67 +193,67 @@ Below are examples of both approaches:
 ------------------------------------------------------------------------------------------------------------------------
 Description of the required JSON Schema
 ------------------------------------------------------------------------------------------------------------------------
-> The root entry must be a "tt" object.
-> The "tt" object can provide a "frameRate" string.
-> The "tt" object must provide a "head" object.
-> The "head" object must provide a "styling" object.
-> The "styling" object must provide a "style" node.
-> The "style" node can be an object.
-> The "style" node can be an array.
-> The "style" object can contain
-> The "style" object can contain a "backgroundColor" string.
-> The "style" object can contain a "color" string.
-> The "style" object can contain a "extent" string.
-> The "extent" string can accept "width% height%"
-> The "style" object can contain a "fontFamily" string.
-> The "fontFamily" string will be matched to the closest system font.
-> The "style" object can contain a "fontStyle" string.
-> The "style" object can contain a "fontSize" string.
-> The "fontSize" string can accept "80%", "80px".
-> The "style" object can contain a "fontWeight" string.
-> The "style" object can contain a "id" string.
-> The "style" object can contain a "paddingTop" string.
-> The "paddingTop" string can accept "2px".
-> The "style" object can contain a "paddingRight" string.
-> The "paddingRight" string can accept "2px".
-> The "style" object can contain a "paddingBottom" string.
-> The "paddingBottom" string can accept "2px".
-> The "style" object can contain a "paddingLeft" string.
-> The "paddingLeft" string can accept "2px".
-> The "style" object can contain a "opacity" string.
-> The "opacity" string can accept "0.0" - "1.0".
-> The "style" object can contain a "origin" string.
-> The "origin" string can accept "horizontal% vertical%".
-> The "style" object can contain a "textAlign" string.
-> The "style" object can contain a "textOutline" string.
-> The "textOutline" string can accept "#000000 2px".
-> The "head" object must provide a "layout" object.
-> The "layout" object must provide a "region" node.
-> The "region" node can be an object.
-> The "region" node can be an array.
-> The "tt" object must provide a "body" object.
-> The "body" object can provide a "style" string.
-> The "body" object can provide a "region" string.
-> The "body" object must provide a "div" object.
-> The "div" object must provide a "p" array.
-> The "p" array must provide array entries.
-> The array entry must be an object.
-> The array entry must contain a "content" string.
-> The "content" string can contain newline character(\n).
-> The array entry must provide a "begin" property.
-> The "begin" string can accept millisecond signatures "HH:MM:SS:MSS".
-> The "begin" string can accept framerate signatures "HH:MM:SS:FR".
-> The framerate signature must use tt.frameRate.
-> The array entry must provide an "end" property.
-> The "end" string can accept millisecond signature "HH:MM:SS:MSS".
-> The "end" string can accept framerate signatures "HH:MM:SS:FR".
-> The framerate signature must use tt.frameRate.
-> The array entry can provide an "extent" property.
-> The "extent" string can accept "width% height%".
-> The array entry can provide an "origin" property.
-> The "origin" string can accept "horizontal% vertical%".
-> The array entry can provide an "region" property.
-> The array entry can provide an "style" property.
+    * The root entry must be a "tt" object.
+    * The "tt" object can provide a "frameRate" string.
+    * The "tt" object must provide a "head" object.
+    * The "head" object must provide a "styling" object.
+    * The "styling" object must provide a "style" node.
+    * The "style" node can be an object.
+    * The "style" node can be an array.
+    * The "style" object can contain
+    * The "style" object can contain a "backgroundColor" string.
+    * The "style" object can contain a "color" string.
+    * The "style" object can contain a "extent" string.
+    * The "extent" string can accept "width% height%"
+    * The "style" object can contain a "fontFamily" string.
+    * The "fontFamily" string will be matched to the closest system font.
+    * The "style" object can contain a "fontStyle" string.
+    * The "style" object can contain a "fontSize" string.
+    * The "fontSize" string can accept "80%", "80px".
+    * The "style" object can contain a "fontWeight" string.
+    * The "style" object can contain a "id" string.
+    * The "style" object can contain a "paddingTop" string.
+    * The "paddingTop" string can accept "2px".
+    * The "style" object can contain a "paddingRight" string.
+    * The "paddingRight" string can accept "2px".
+    * The "style" object can contain a "paddingBottom" string.
+    * The "paddingBottom" string can accept "2px".
+    * The "style" object can contain a "paddingLeft" string.
+    * The "paddingLeft" string can accept "2px".
+    * The "style" object can contain a "opacity" string.
+    * The "opacity" string can accept "0.0" - "1.0".
+    * The "style" object can contain a "origin" string.
+    * The "origin" string can accept "horizontal% vertical%".
+    * The "style" object can contain a "textAlign" string.
+    * The "style" object can contain a "textOutline" string.
+    * The "textOutline" string can accept "#000000 2px".
+    * The "head" object must provide a "layout" object.
+    * The "layout" object must provide a "region" node.
+    * The "region" node can be an object.
+    * The "region" node can be an array.
+    * The "tt" object must provide a "body" object.
+    * The "body" object can provide a "style" string.
+    * The "body" object can provide a "region" string.
+    * The "body" object must provide a "div" object.
+    * The "div" object must provide a "p" array.
+    * The "p" array must provide array entries.
+    * The array entry must be an object.
+    * The array entry must contain a "content" string.
+    * The "content" string can contain newline character(\n).
+    * The array entry must provide a "begin" property.
+    * The "begin" string can accept millisecond signatures "HH:MM:SS:MSS".
+    * The "begin" string can accept framerate signatures "HH:MM:SS:FR".
+    * The framerate signature must use tt.frameRate.
+    * The array entry must provide an "end" property.
+    * The "end" string can accept millisecond signature "HH:MM:SS:MSS".
+    * The "end" string can accept framerate signatures "HH:MM:SS:FR".
+    * The framerate signature must use tt.frameRate.
+    * The array entry can provide an "extent" property.
+    * The "extent" string can accept "width% height%".
+    * The array entry can provide an "origin" property.
+    * The "origin" string can accept "horizontal% vertical%".
+    * The array entry can provide an "region" property.
+    * The array entry can provide an "style" property.
 
 ------------------------------------------------------------------------------------------------------------------------
 JSON Schema
