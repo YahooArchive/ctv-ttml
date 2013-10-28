@@ -29,7 +29,7 @@ Structure of the module
 Obtaining the module
 ------------------------------------------------------------------------------------------------------------------------
 You will need to grab a copy of the module source. You can download it from github at the following location:
-[https://github.com/yahoo/stv-ttml](https://github.com/yahoo/ctv-ttml)
+[https://github.com/yahoo/ctv-ttml](https://github.com/yahoo/ctv-ttml)
 
 ------------------------------------------------------------------------------------------------------------------------
 Integrating the module
