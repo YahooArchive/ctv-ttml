@@ -140,3 +140,6 @@
     separated the Release Notes into RELEASE.txt
     separated the docs into README.md
     
+0.0.20
+    updated compatibility layer to supply cleanWhitespace method to frameworks older than 1.5
+    
