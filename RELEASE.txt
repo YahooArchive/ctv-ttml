@@ -127,3 +127,16 @@
 0.0.18
     added extra parsing when flattening the paragraphs allowing us to do some light piecing together of span fragments
     changed the KONtx.cc.config.longFormContentTimingReductionAdjustment to accept seconds instead of minutes
+
+0.0.19
+    added KONtx.cc.config.yqlHost as the default entry point for the rest api
+    added KONtx.cc.config.yqlQuery as the default normalization query sent to yql
+        the inclusion of the '%1' is required and will be replaced by a url at the point of execution
+        examples:
+            "select * from ctv.ttml.normalize where url='%1'&env=http://datatables.org/alltables.env"
+            "select * from xml where url='%1'"
+    added KONtx.cc.config.debug_timeSignatureOffset as a way for authors to fake a start time. this allows us to test ttml documents that don't have any captions until the 20 minute offset by adjusting the calculation and faking the clock in the cc parser
+    added KONtx.cc.config.debug_ttmlLocation as a way for authors to force load a single ttml document regardless of the ttml document attached to the video
+    separated the Release Notes into RELEASE.txt
+    separated the docs into README.md
+    

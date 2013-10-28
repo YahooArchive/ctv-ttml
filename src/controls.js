@@ -533,11 +533,11 @@ common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "processBody", "complet
         }
         
         var modifier = 0;
-        if (!_PRODUCTION && KONtx.cc.config.longFormContentTimingReductionAdjustment && (common.typeOf(KONtx.cc.config.longFormContentTimingReductionAdjustment) == "number")) {
+        if (!_PRODUCTION && KONtx.cc.config.debug_timeSignatureOffset && (common.typeOf(KONtx.cc.config.debug_timeSignatureOffset) == "number")) {
             // setting this will shave off the specified number of minutes from the begin and end times
             // this will allow the testing of content that is 30 minutes in at the 5 minute mark
             // this is to be used to test ttml for long form content
-            modifier = KONtx.cc.config.longFormContentTimingReductionAdjustment;
+            modifier = KONtx.cc.config.debug_timeSignatureOffset;
         }
         
         return ((60 * 2) * Number(split[0])) + (60 * Number(split[1])) + Number(split[2]) + Number(fraction) - modifier;

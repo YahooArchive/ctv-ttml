@@ -20,7 +20,7 @@ KONtx.cc = (function kontx_cc_singleton() {
 		//
 		name: "CC",
 		//
-		version: "0.0.18",
+		version: "0.0.19",
 		//
 		log: common.debug.log,
 		//
@@ -31,9 +31,15 @@ KONtx.cc = (function kontx_cc_singleton() {
             defaultLanguage: "en",
             languageStorageKey: "captionsLanguage",
             activatedStorageKey: "captionsActivated",
-            //
+            // used to determine if the module is being loaded locally from an app or globally from the framework
 			modulePath: KONtx.config.ccModulePath,
+            // location of module images
 			assetPath: KONtx.config.ccModulePath + "assets/" + (screen.width + "x" + screen.height) + "/",
+            // the yql entry point
+            yqlHost: "http://query.yahooapis.com/v1/public/yql",
+            // the query used to normalize the ttml document
+            //yqlQuery: "select * from ctv.ttml.normalize where url='%1'&env=http://datatables.org/alltables.env",
+            yqlQuery: "select * from xml where url='%1'",
             // this will be auto-included during the load of the actuator file
             // not available in current frameworks
             include: [
@@ -52,9 +58,13 @@ KONtx.cc = (function kontx_cc_singleton() {
 				},
 			],
             // setting this will shave off the specified number of seconds from the begin and end times
-            // this will allow the arbitrary testing of content from any time
-            // example: to test entries that start at 20 minutes use (20 * 60)
-            longFormContentTimingReductionAdjustment: 60,
+            // this will allow the arbitrary testing of content from any point in time
+            // example: to test entries that start at 20 minutes use (60 * 20)
+            // common.debug.level must be >= 2
+            debug_timeSignatureOffset: common.debug.level[2] ? 60 : null,
+            // a ttml document uri that will be force loaded instead of the uri provided by the video
+            // common.debug.level must be >= 2
+            debug_ttmlLocation: common.debug.level[2] ? "" : null,
             //
 		},
         //

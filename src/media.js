@@ -108,10 +108,9 @@ KONtx.media.Captions.prototype = {
      */
     parser: function (url, callback) {
 common.debug.level[3] && common.debug.log("default parser");
-        //var query = "select * from ctv.ttml.normalize where url='" + url + "'&env=http://datatables.org/alltables.env";
-        var query = "select * from xml where url='" + url + "'";
+        url = (!_PRODUCTION && KONtx.cc.config.debug_ttmlLocation) ? KONtx.cc.config.debug_ttmlLocation : url;
         KONtx.cc.fetch({
-            url: "http://query.yahooapis.com/v1/public/yql?format=json&q=" + query,
+            url: KONtx.cc.config.yqlHost + "?format=json&q=" + KONtx.cc.config.yqlQuery.replace("%1", url),
             success: function (xhr) {
                 var json = JSON.parse(xhr.responseText).query.results;
 common.debug.level[4] && KONtx.cc.log("CaptionsEntry", "fetchHead", "success", common.dump(json, 7));

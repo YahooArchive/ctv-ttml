@@ -29,7 +29,7 @@ Structure of the module
 Obtaining the module
 ------------------------------------------------------------------------------------------------------------------------
 You will need to grab a copy of the module source. You can download it from github at the following location:
-[https://github.com/yahoo/stv-ttml](https://github.com/yahoo/stv-ttml)
+[https://github.com/yahoo/stv-ttml](https://github.com/yahoo/ctv-ttml)
 
 ------------------------------------------------------------------------------------------------------------------------
 Integrating the module
@@ -50,7 +50,19 @@ Integrating the module
 ------------------------------------------------------------------------------------------------------------------------
 Optional debugging tools
 ------------------------------------------------------------------------------------------------------------------------    
-
+    /*
+    setting this will shave off the specified number of seconds from the begin and end times which allows for the
+    arbitrary testing of content from any point in the time sequence
+    example: to test entries that start at 20 minutes use (60 * 20)
+    note: common.debug.level must be set to >= 2, common.debug.level = 2; if (common.debug.level[2]) { [...] }
+    */
+    KONtx.cc.config.debug_timeSignatureOffset = Integer;
+    
+    /*
+    a ttml document uri that will be force loaded instead of the uri provided by the video
+    note: common.debug.level must be set to >= 2, common.debug.level = 2; if (common.debug.level[2]) { [...] }
+    */
+    KONtx.cc.config.debug_ttmlLocation: String,
 
 ------------------------------------------------------------------------------------------------------------------------
 Wiring up the code
@@ -265,140 +277,139 @@ JSON Schema
 The following JSON structure is the schema that the interpreter understands. Not adhering to this schema will result in
 the non-displayal of TTML data.
 
-    {
-        "$schema": "http://json-schema.org/draft-04/schema#",
-        "description": "TTML as JSON for Yahoo Connected TV",
-        "type": "object",
-        "required": [
-            "tt"
-        ],
-        "properties": {
-            "tt": {
-                "type": "object",
-                "required": [ "head", "body" ],
-                "properties": {
-                    "lang": { "type": "string" },
-                    "frameRate": { "type": "number" },
-                    "head": {
-                        "type": "object",
-                        "required": [ "layout", "styling" ],
-                        "properties": {
-                            "styling": {
-                                "type": "object",
-                                "required": [ "style" ],
-                                "properties": {
-                                    "style": {
-                                        "type": [ "object", "array" ],
-                                        "oneOf": [
-                                            { "$ref": "#/definitions/singleEntryStyle" },
-                                            { "$ref": "#/definitions/multiEntryStyle" }
-                                        ]
-                                    }
-                                }
-                            },
-                            "layout": {
-                                "type": "object",
-                                "required": [ "region" ],
-                                "properties": {
-                                    "region": {
-                                        "type": [ "object", "array" ],
-                                        "oneOf": [
-                                            { "$ref": "#/definitions/singleEntryRegion" },
-                                            { "$ref": "#/definitions/multiEntryRegion" }
-                                        ]
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "body": {
-                    "type": "object",
-                    "required": [ "div" ],
-                    "properties": {
-                        "region": { "type": "string" },
-                        "style": { "type": "string" },
-                        "div": {
-                            "type": "object",
-                            "required": [ "p" ],
-                            "properties": {
-                                "p": {
-                                    "type": "array",
-                                    "items": {
-                                        "type": "object",
-                                        "required": [ "content", "begin", "end" ],
-                                        "properties": {
-                                            "content": { "type": "string" },
-                                            "begin": { "type": "string" },
-                                            "end": { "type": "string" },
-                                            "extent": { "type": "string" },
-                                            "origin": { "type": "string" },
-                                            "region": { "type": "string" },
-                                            "style": { "type": "string" }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "definitions": {
-            "singleEntryStyle": {
-                "type": "object",
-                "properties": {
-                    "id": { "type": "string" },
-                    "backgroundColor": { "type": "string" },
-                    "color": { "type": "string" },
-                    "extent": { "type": "string" },
-                    "fontFamily": { "type": "string" },
-                    "fontStyle": { "type": "string" },
-                    "fontSize": { "type": "string" },
-                    "fontWeight": { "type": "string" },
-                    "paddingTop": { "type": "string" },
-                    "paddingRight": { "type": "string" },
-                    "paddingBottom": { "type": "string" },
-                    "paddingLeft": { "type": "string" },
-                    "opacity": { "type": "string" },
-                    "origin": { "type": "string" },
-                    "textAlign": { "type": "string" },
-                    "textOutline": { "type": "string" }
-                }
-            },
-            "multiEntryStyle": {
-                "type": "array",
-                "items": { "$ref": "#/definitions/singleEntryStyle" }
-            },
-            "singleEntryRegion": {
-                "type": "object",
-                "properties": {
-                    "id": { "type": "string" },
-                    "backgroundColor": { "type": "string" },
-                    "color": { "type": "string" },
-                    "extent": { "type": "string" },
-                    "fontFamily": { "type": "string" },
-                    "fontStyle": { "type": "string" },
-                    "fontSize": { "type": "string" },
-                    "fontWeight": { "type": "string" },
-                    "paddingTop": { "type": "string" },
-                    "paddingRight": { "type": "string" },
-                    "paddingBottom": { "type": "string" },
-                    "paddingLeft": { "type": "string" },
-                    "opacity": { "type": "string" },
-                    "origin": { "type": "string" },
-                    "textAlign": { "type": "string" },
-                    "textOutline": { "type": "string" },
-                    "style": { "type": "string" }
-                }
-            },
-            "multiEntryRegion": {
-                "type": "array",
-                "items": { "$ref": "#/definitions/singleEntryRegion" }
-            }
-        }
+    {  
+        "$schema": "http://json-schema.org/draft-04/schema#",  
+        "description": "TTML as JSON for Yahoo Connected TV",  
+        "type": "object",  
+        "required": [ "tt" ],  
+        "properties": {  
+            "tt": {  
+                "type": "object",  
+                "required": [ "head", "body" ],  
+                "properties": {  
+                    "lang": { "type": "string" },  
+                    "frameRate": { "type": "number" },  
+                    "head": {  
+                        "type": "object",  
+                        "required": [ "layout", "styling" ],  
+                        "properties": {  
+                            "styling": {  
+                                "type": "object",  
+                                "required": [ "style" ],  
+                                "properties": {  
+                                    "style": {  
+                                        "type": [ "object", "array" ],  
+                                        "oneOf": [  
+                                            { "$ref": "#/definitions/singleEntryStyle" },  
+                                            { "$ref": "#/definitions/multiEntryStyle" }  
+                                        ]  
+                                    }  
+                                },  
+                                "definitions": {  
+                                    "singleEntryStyle": {  
+                                        "type": "object",  
+                                        "properties": {  
+                                            "id": { "type": "string" },  
+                                            "backgroundColor": { "type": "string" },  
+                                            "color": { "type": "string" },  
+                                            "extent": { "type": "string" },  
+                                            "fontFamily": { "type": "string" },  
+                                            "fontStyle": { "type": "string" },  
+                                            "fontSize": { "type": "string" },  
+                                            "fontWeight": { "type": "string" },  
+                                            "paddingTop": { "type": "string" },  
+                                            "paddingRight": { "type": "string" },  
+                                            "paddingBottom": { "type": "string" },  
+                                            "paddingLeft": { "type": "string" },  
+                                            "opacity": { "type": "string" },  
+                                            "origin": { "type": "string" },  
+                                            "textAlign": { "type": "string" },  
+                                            "textOutline": { "type": "string" }  
+                                        }  
+                                    },  
+                                    "multiEntryStyle": {  
+                                        "type": "array",  
+                                        "items": { "$ref": "#/singleEntryStyle" }  
+                                    }  
+                                }  
+                            },  
+                            "layout": {  
+                                "type": "object",  
+                                "required": [ "region" ],  
+                                "properties": {  
+                                    "region": {  
+                                        "type": [ "object", "array" ],  
+                                        "oneOf": [  
+                                            { "$ref": "#/definitions/singleEntryRegion" },  
+                                            { "$ref": "#/definitions/multiEntryRegion" }  
+                                        ]  
+                                    }  
+                                },  
+                                "definitions": {  
+                                    "singleEntryRegion": {  
+                                        "type": "object",  
+                                        "properties": {  
+                                            "id": { "type": "string" },  
+                                            "backgroundColor": { "type": "string" },  
+                                            "color": { "type": "string" },  
+                                            "extent": { "type": "string" },  
+                                            "fontFamily": { "type": "string" },  
+                                            "fontStyle": { "type": "string" },  
+                                            "fontSize": { "type": "string" },  
+                                            "fontWeight": { "type": "string" },  
+                                            "paddingTop": { "type": "string" },  
+                                            "paddingRight": { "type": "string" },  
+                                            "paddingBottom": { "type": "string" },  
+                                            "paddingLeft": { "type": "string" },  
+                                            "opacity": { "type": "string" },  
+                                            "origin": { "type": "string" },  
+                                            "textAlign": { "type": "string" },  
+                                            "textOutline": { "type": "string" },  
+                                            "style": { "type": "string" }  
+                                        }  
+                                    },  
+                                    "multiEntryRegion": {  
+                                        "type": "array",  
+                                        "items": { "$ref": "#/singleEntryRegion" }  
+                                    }  
+                                }  
+                            }  
+                        }  
+                    }  
+                },  
+                "body": {  
+                    "type": "object",  
+                    "required": [ "div" ],  
+                    "properties": {  
+                        "region": { "type": "string" },  
+                        "style": { "type": "string" },  
+                        "div": {  
+                            "type": "object",  
+                            "required": [ "p" ],  
+                            "properties": {  
+                                "p": {  
+                                    "type": "array",  
+                                    "items": {  
+                                        "type": "object",  
+                                        "required": [ "content", "begin", "end"],  
+                                        "properties": {  
+                                            "content": { "type": "string" },  
+                                            "begin": { "type": "string" },  
+                                            "end": { "type": "string" },  
+                                            "extent": { "type": "string"},  
+                                            "origin": { "type": "string"},  
+                                            "region": { "type": "string" },  
+                                            "style": { "type": "string" }  
+                                        }  
+                                    }  
+                                }  
+                            }  
+                        }  
+                    }  
+                }  
+            }  
+        }  
     }
-
 
 ------------------------------------------------------------------------------------------------------------------------
 JSON Structure
