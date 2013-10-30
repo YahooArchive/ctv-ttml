@@ -145,3 +145,7 @@
     
 0.0.21
     added licensing
+
+0.0.22
+    added missing common.typeOf to compatibility(not sure where it went)
+    
