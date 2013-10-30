@@ -143,3 +143,5 @@
 0.0.20
     updated compatibility layer to supply cleanWhitespace method to frameworks older than 1.5
     
+0.0.21
+    added licensing
