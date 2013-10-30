@@ -152,102 +152,102 @@ if (typeof(common) === "undefined") {
 			return typeof(source);
 			
 		};
-        common.Object = {};
-        common.Object.keys = function common_Object_keys(source) {
-            var list = [];
-            for (var key in source) {
-                list.push(key);
-            }
-            return list;
-        };
-        common.Object.from = function common_Object_from(source) {
-            var item = {};
-            if (common.isObject(source)) {
-                item = source;
-            } else {
-                item[source] = arguments[1];
-            }
-            return item;
-        };
-        common.isObject = function common_isObject(source) {
-            return common.typeOf(source) === "object";
-        };
-        common.toObject = function common_toObject() {
-            return common.Object.from.apply(false, arguments);
-        };
-        common.manifest = (function common_manifest_singleton() {
-            var instance = {
-                stack: {},
-                add: function common_manifest_add() {
-                    var run = 1;
-                    switch (run) {
-                        case 0:
-                            if (typeof(arguments[0]) === "string") {
-                                arguments[0] = common.toObject(arguments[0], arguments[1]);
-                                arguments[1] = "";
-                            }
-                            for (var key in arguments[0]) {
-                                var result = null;
-                                var file = null;
-                                var value = arguments[0][key];
-                                var path = arguments[1];
-                                if (value) {
-                                    if (typeof(value) === "string") {
-                                        result = (path || "") + value;
-                                    } else {
-                                        if ("file" in value) {
-                                            file = value.file;
-                                            value.file = (path || "") + file;
-                                        }
-                                        result = value;
-                                    }
-                                    if (result) {
-                                        this.stack[key] = result;
-                                    }
-                                }
-                            }
-                            break;
-                        case 1:
-                            if (typeof(arguments[0]) === "string") {
-                                this.stack[arguments[0]] = arguments[1];
-                            } else {
-                                for (var i in arguments[0]) {
-                                    if (arguments.length > 1) {
-                                        if (typeof(arguments[0][i]) === "string") {
-                                            arguments[0][i] = arguments[1] + arguments[0][i];
-                                        } else {
-                                            arguments[0][i].file = arguments[1] + arguments[0][i].file;
-                                        }
-                                    }
-                                    this.stack[i] = arguments[0][i];
-                                }
-                            }
-                            break;
-                    }
-                },
-                get: function common_manifest_get(entry) {
-                    return (entry && (entry in this.stack)) ? this.stack[entry] : false;
-                }
-            };
-            return instance;
-        })();
+		common.Object = {};
+		common.Object.keys = function common_Object_keys(source) {
+			var list = [];
+			for (var key in source) {
+				list.push(key);
+			}
+			return list;
+		};
+		common.Object.from = function common_Object_from(source) {
+			var item = {};
+			if (common.isObject(source)) {
+				item = source;
+			} else {
+				item[source] = arguments[1];
+			}
+			return item;
+		};
+		common.isObject = function common_isObject(source) {
+			return common.typeOf(source) === "object";
+		};
+		common.toObject = function common_toObject() {
+			return common.Object.from.apply(false, arguments);
+		};
+		common.manifest = (function common_manifest_singleton() {
+			var instance = {
+				stack: {},
+				add: function common_manifest_add() {
+					var run = 1;
+					switch (run) {
+						case 0:
+							if (typeof(arguments[0]) === "string") {
+								arguments[0] = common.toObject(arguments[0], arguments[1]);
+								arguments[1] = "";
+							}
+							for (var key in arguments[0]) {
+								var result = null;
+								var file = null;
+								var value = arguments[0][key];
+								var path = arguments[1];
+								if (value) {
+									if (typeof(value) === "string") {
+										result = (path || "") + value;
+									} else {
+										if ("file" in value) {
+											file = value.file;
+											value.file = (path || "") + file;
+										}
+										result = value;
+									}
+									if (result) {
+										this.stack[key] = result;
+									}
+								}
+							}
+							break;
+						case 1:
+							if (typeof(arguments[0]) === "string") {
+								this.stack[arguments[0]] = arguments[1];
+							} else {
+								for (var i in arguments[0]) {
+									if (arguments.length > 1) {
+										if (typeof(arguments[0][i]) === "string") {
+											arguments[0][i] = arguments[1] + arguments[0][i];
+										} else {
+											arguments[0][i].file = arguments[1] + arguments[0][i].file;
+										}
+									}
+									this.stack[i] = arguments[0][i];
+								}
+							}
+							break;
+					}
+				},
+				get: function common_manifest_get(entry) {
+					return (entry && (entry in this.stack)) ? this.stack[entry] : false;
+				}
+			};
+			return instance;
+		})();
 	})();
 }
 // < 1.7
 if (!("level" in common.debug)) {
-    (function common_debug_level() {
-        var logLevel = [_production ? false : true];
-        common.debug.__defineSetter__("level", function (level) {
-            logLevel = [];
-            for (var i = 0; i <= Number(level); i++) {
-                logLevel[i] = true;
-            }
-        });
-        common.debug.__defineGetter__("level", function () {
-            return logLevel;
-        });
-    })();
-    common.debug.level = 2;
+	(function common_debug_level() {
+		var logLevel = [_production ? false : true];
+		common.debug.__defineSetter__("level", function (level) {
+			logLevel = [];
+			for (var i = 0; i <= Number(level); i++) {
+				logLevel[i] = true;
+			}
+		});
+		common.debug.__defineGetter__("level", function () {
+			return logLevel;
+		});
+	})();
+	common.debug.level = 2;
 }
 // < 1.6
 if (!("Element" in common)) {
@@ -269,19 +269,19 @@ if (!("Element" in common)) {
 }
 // < 1.6
 if (!("String" in common)) {
-    common.String = {};
+	common.String = {};
 }
 // < 1.5
 if (!("trim" in common.String)) {
-    common.String.trim = function common_String_trim(source) {
-        return source.replace(/^\s+|\s+$/g, "");
-    };
+	common.String.trim = function common_String_trim(source) {
+		return source.replace(/^\s+|\s+$/g, "");
+	};
 }
 // < 1.6
 if (!("cleanWhitespace" in common.String)) {
-    common.String.cleanWhitespace = function common_String_cleanWhitespace(source) {
-        return common.String.trim(source.replace(/\s{2,}/g, " "));
-    };
+	common.String.cleanWhitespace = function common_String_cleanWhitespace(source) {
+		return common.String.trim(source.replace(/\s{2,}/g, " "));
+	};
 }
 // < 1.5
 if (!("getViewConfig" in KONtx.application)) {
@@ -306,9 +306,9 @@ if (!("viewTypes" in KONtx.application)) {
 }
 // < 1.4
 if (!("isPhysicalNetworkDown" in KONtx.application)) {
-    KONtx.application.isPhysicalNetworkDown = function () {
-        return (typeof(KONtx.application.getNetworkDownStatus) == "function") ? KONtx.application.getNetworkDownStatus() : KONtx.application.getNetworkDownStatus;
-    };
+	KONtx.application.isPhysicalNetworkDown = function () {
+		return (typeof(KONtx.application.getNetworkDownStatus) == "function") ? KONtx.application.getNetworkDownStatus() : KONtx.application.getNetworkDownStatus;
+	};
 }
 // < 1.3.10
 if (!("getDefaultViewportBounds" in KONtx.mediaplayer)) {
