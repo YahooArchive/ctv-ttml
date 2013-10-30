@@ -86,71 +86,38 @@ if (typeof(common) === "undefined") {
 			}
 		};
 		common.typeOf = function common_typeOf(source) {
-			
 			if (source == undefined) {
-				
 				return false;
-				
 			}
-			
 			switch (source.constructor) {
-				
 				case Object:
-					
 					return "object";
-				
 				case Array:
-					
 					return "array";
-				
 				case Number:
-					
 					return isFinite(source) ? "number" : false;
-				
 				case Glow:
-					
 					return "glow";
-				
 				case Date:
-					
 					return "date";
-				
 				case Function:
-					
 					return "function";
-				
 				default:
-					
 					if (typeof(source.length) === "number") {
-						
 						if (source.callee) {
-							
 							return "arguments";
-							
 						} else if (source.item) {
-							
 							return "collection";
-							
 						}
-						
 					}
-					
 					if (source.__instanceID || source._ktxID) {
-						
 						return "instance";
-						
 					}
-					
 					if (source.nodeName) {
-						
 						return source.nodeName;
-						
 					}
-					
 			}
-			
 			return typeof(source);
-			
 		};
 		common.Object = {};
 		common.Object.keys = function common_Object_keys(source) {
