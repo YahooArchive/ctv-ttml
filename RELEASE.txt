@@ -149,3 +149,6 @@
 0.0.22
     added missing common.typeOf to compatibility(not sure where it went)
     
+0.0.23
+	the common string methods were not being merged to upstream branches. this commit is to make sure all branches are in sync
+	
