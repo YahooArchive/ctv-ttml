@@ -152,3 +152,6 @@
 0.0.23
 	the common string methods were not being merged to upstream branches. this commit is to make sure all branches are in sync
 	
+0.0.24
+	changed the default value for KONtx.cc.config.yqlHost to our production cname in order to access our ctv data table
+	
