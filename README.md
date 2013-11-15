@@ -106,9 +106,44 @@ Wiring up the code - Method 2
     });
 
 ------------------------------------------------------------------------------------------------------------------------
+Adjusting the renderer (software/hardware)
+------------------------------------------------------------------------------------------------------------------------
+Some vendors may provide support for hardware parsing/rendering. As an author you don't have to do anything to take
+advantage of this. In the CC module we perform the required detection and will automatically switch to the hardware when
+it is available.
+
+This will not change the UI that the end user interacts with to enable/disable captions via the button
+provided in the mediaplayers transport control.
+
+If the CC module detects that it is being used in our ADK it will force the use of the software parser/renderer to allow
+you to see if your implementation is working correctly.
+
+If you want to force the use of the software parser/renderer, regardless of hardware support, you can used the following
+code.
+
+// explicit forced software renderer
+new KONtx.media.Captions({
+	renderer: "yahoo"
+});
+
+The below are examples of the default implementation. Both of these examples do the same thing.
+
+// explicit default
+new KONtx.media.Captions({
+	renderer: "auto"
+});
+
+// implicit default
+new KONtx.media.Captions();
+
+It should be noted that there is no way to force the hardware renderer. This is because not all vendors support the
+hardware path. If "auto" is chosen then we will detect the hardware support and, if available, use it but if it is not
+available we will fall back to the software path automatically.
+
+------------------------------------------------------------------------------------------------------------------------
 Using the default parser
 ------------------------------------------------------------------------------------------------------------------------
-If your ttml does not contain any nested nodes under the paragraphs then test the default.
+Test the default path first to see if your captions look alright.
 
     new KONtx.media.Captions();
 
@@ -131,8 +166,9 @@ The below performs the same as the above.
 ------------------------------------------------------------------------------------------------------------------------
 Using a custom parser
 ------------------------------------------------------------------------------------------------------------------------
-If your ttml contains any nested nodes under the paragraphs you will need to process the document to conform to the
-renderer scheme.
+If your ttml doesn't appear correctly this probably means that the ttml document itself has come formatting that is not
+understood by our parser and/or renderer. In this case you will need to process the document to conform to the renderer
+scheme.
 
 This platform cannot support nested paragraph content so we need to flatten the "paragraph" tags into single entry nodes
 that contain only string text. The first thought would be to convert the XML to JSON but simply doing this will cause us
