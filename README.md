@@ -122,6 +122,7 @@ If you want to force the use of the software parser/renderer, regardless of hard
 code.
 
 // explicit forced software renderer
+	
 	new KONtx.media.Captions({
 		renderer: "yahoo"
 	});
@@ -129,11 +130,13 @@ code.
 The below are examples of the default implementation. Both of these examples do the same thing.
 
 // explicit default
+	
 	new KONtx.media.Captions({
 		renderer: "auto"
 	});
 
 // implicit default
+	
 	new KONtx.media.Captions();
 
 It should be noted that there is no way to force the hardware renderer. This is because not all vendors support the
