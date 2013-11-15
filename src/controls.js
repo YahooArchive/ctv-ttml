@@ -1,4 +1,4 @@
-/*******************************************************************************
+/***********************************************************************************************************************
 Copyright (c) 2013, Yahoo.
 All rights reserved.
 
@@ -31,10 +31,17 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*******************************************************************************/
+***********************************************************************************************************************/
 //
 delete KONtx.control.CaptionsOverlay;
-//
+/*
+This object does a few things.
+1) it responds to global activate/deactivate commands
+2) it responds to keys on the transport control
+3) it responds to timeindex changes on the mediaplayer
+4) it consumes the ttml json payload
+5) it renders the ttml content
+*/
 KONtx.control.CaptionsOverlay = new KONtx.Class({
     ClassName: "CaptionsOverlay",
 	Extends: KONtx.element.Core,
@@ -78,8 +85,8 @@ KONtx.control.CaptionsOverlay = new KONtx.Class({
     data: {},
     // nodes
     regions: {},
-    //
-    /**************************************************************************/
+    // 
+    /******************************************************************************************************************/
     // 
 	initialize: function () {
         
@@ -93,6 +100,9 @@ KONtx.control.CaptionsOverlay = new KONtx.Class({
         
         this.onDeactivate.subscribeTo(this, "onDeactivate", this);
         
+		// this wires up the handler to receive messages when other controls call...
+		// co = new KONtx.cc.CaptionsOverlay
+		// co.fire("onDataReceived")
         this.onDataReceived.subscribeTo(this, "onDataReceived", this);
         
 	},
@@ -506,7 +516,7 @@ common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "processBody", "complet
         
         //
         styles.fontStyle = ("fontStyle" in styles) ? styles.fontStyle : "normal";
-
+		
         // with no padding elements with background colors look akward since they have default top and bottom padding
         // this makes text blocks "look" more consistent and less jarring
         styles.paddingLeft = styles.paddingLeft || 3;
@@ -575,30 +585,23 @@ common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "processBody", "complet
         
     },
     //
-    /**************************************************************************/
-    //
+    /******************************************************************************************************************/
+    // fired when this control is appended to the dom
     onAppended: function (event) {
         
         this.onDeactivate.subscribeTo(this.getView(), "onHideView", this);
         
     },
-    //
+    // fired when the CC button is selected on the transport control
     onActivate: function (event) {
-        
 common.debug.level[2] && KONtx.cc.log("CaptionsOverlay", "onActivate");
 common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onActivate", common.dump(event.payload));
         
         var dataId = event.payload.url;
         
-        if (!this._boundPlayerKeyPress) {
+        if (!this._boundControlStop) {
             
-            this._boundPlayerKeyPress = this.onPlayerKeyPress.subscribeTo(KONtx.mediaplayer, "onControlStop", this);
-            
-        }
-        
-        if (!this._boundMessageBroadcast) {
-            
-            this._boundMessageBroadcast = this.onDataReceived.subscribeTo(KONtx.messages, "onBroadcast", this);
+            this._boundControlStop = this.onControlStop.subscribeTo(KONtx.mediaplayer, "onControlStop", this);
             
         }
         
@@ -608,12 +611,11 @@ common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onActivate", common.du
             
         }
         
-        if (!this._boundOnTimeIndexChange) {
-            
-            this._boundOnTimeIndexChange = this.onPlayerTimeIndexChange.subscribeTo(KONtx.mediaplayer, "onTimeIndexChanged", this);
-            
-        }
-        
+		if (!this._boundOnTimeIndexChange) {
+			
+			this._boundOnTimeIndexChange = this.onPlayerTimeIndexChange.subscribeTo(KONtx.mediaplayer, "onTimeIndexChanged", this);
+			
+		}
 common.debug.level[2] && KONtx.cc.log("CaptionsOverlay", "onActivate", "cleaning up state object");
         
         this.state = common.clone(this.config.state);
@@ -628,33 +630,58 @@ common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "data ids
             this.data.captions = KONtx.mediaplayer.playlist.currentEntry.getCaptions();
             
             if (this.data.captions) {
-common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "this.data.captions", "found captions");
+common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "found captions");
 common.debug.level[5] && KONtx.cc.log(common.dump(this.data.captions));
                 
-                this.data.fulfilled = false;
-                
-                var self = this;
-                
-                var callback = function (result) {
-                    
-                    self.fire("onDataReceived", result);
-                    
-                    self.data.fulfilled = true;
-                    
-                };
-                
-                var parser = this.data.captions.parser;
-                
-                var entry = this.data.captions.getDefaultEntry();
-                
-                if (entry.parser && (common.typeOf(entry.parser) == "function")) {
-                    
-                    parser = entry.parser;
-                    
-                }
-                
-                parser(entry.url, callback);
-                
+				var hardwareSupportAvailable = false;
+				
+				var activeInput = KONtx.mediaplayer.tvapi.activeInput;
+				
+				if (activeInput) {
+					
+					if ("doesSupport" in activeInput) {
+						
+						hardwareSupportAvailable = activeInput.doesSupport(KONtx.cc.config.SUPPORT_CC);
+						
+					}
+					
+				}
+common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "hardwareSupportAvailable", String(hardwareSupportAvailable));
+				
+				var useHardwareRenderer = (KONtx.cc.renderer == "auto") ? true : false;
+common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "useHardwareRenderer", String(useHardwareRenderer));
+				
+				var entry = this.data.captions.getDefaultEntry();
+				
+				if (hardwareSupportAvailable && useHardwareRenderer) {
+common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "onActivate", "sending data to firmware");
+					
+					activeInput.setClosedCaptionUrls([entry.url]);
+					
+					activeInput.cc = true;
+					
+				} else {
+					
+					var parser = this.data.captions.parser;
+					
+					if (entry.parser && (common.typeOf(entry.parser) == "function")) {
+						
+						parser = entry.parser;
+						
+					}
+					
+					this.data.fulfilled = false;
+					
+					parser(entry.url, common.bind(function (result) {
+						
+						this.fire("onDataReceived", result);
+						
+						this.data.fulfilled = true;
+						
+					}, this));
+					
+				}
+				
             } else {
 common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "this.data.captions", "no captions found");
                 
@@ -663,27 +690,62 @@ common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "this.dat
         }
         
     },
-    //
+    // fired when the CC button is selected on the transport control
     onDeactivate: function (event) {
 common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "onDeactivate");
         
-        var regions = this.regions;
-        
-        var index = null;
-        
-        for (index in regions) {
-            
-            regions[index].visible = false;
-            
+		var hardwareSupportAvailable = false;
+		
+		var activeInput = KONtx.mediaplayer.tvapi.activeInput;
+		
+		if (activeInput) {
+			
+			if ("doesSupport" in activeInput) {
+				
+				hardwareSupportAvailable = activeInput.doesSupport(KONtx.cc.config.SUPPORT_CC);
+				
+			}
+			
+		}
+common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onDeactivate", "hardwareSupportAvailable", String(hardwareSupportAvailable));
+		
+		var useHardwareRenderer = (KONtx.cc.renderer == "auto") ? true : false;
+common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onDeactivate", "useHardwareRenderer", String(useHardwareRenderer));
+		
+		if (hardwareSupportAvailable && useHardwareRenderer) {
+common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "onDeactivate", "sending deactivate message to to firmware");
+			
+			activeInput.cc = false;
+			
+		} else {
+			
+			var regions = this.regions;
+			
+			var index = null;
+			
+			for (index in regions) {
+				
+				regions[index].visible = false;
+				
 common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onDeactivate", "region", index);
+				
+			}
+			
+		}
+		
+		if (this._boundOnTimeIndexChange) {
+			
+			this._boundOnTimeIndexChange.unsubscribeFrom(KONtx.mediaplayer, "onTimeIndexChanged", this);
+			
+			this._boundOnTimeIndexChange = null;
+			
+		}
+		
+        if (this._boundControlStop) {
             
-        }
-        
-        if (this._boundPlayerKeyPress) {
+            this._boundControlStop.unsubscribeFrom(KONtx.mediaplayer, "onControlStop", this);
             
-            this._boundPlayerKeyPress.unsubscribeFrom(KONtx.mediaplayer, "onControlStop", this);
-            
-            this._boundPlayerKeyPress = null;
+            this._boundControlStop = null;
             
         }
         
@@ -695,28 +757,12 @@ common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onDeactivate", "region
             
         }
         
-        if (this._boundOnTimeIndexChange) {
-            
-            this._boundOnTimeIndexChange.unsubscribeFrom(KONtx.mediaplayer, "onTimeIndexChanged", this);
-            
-            this._boundOnTimeIndexChange = null;
-            
-        }
-        
-        if (this._boundMessageBroadcast) {
-            
-            this._boundMessageBroadcast.unsubscribeFrom(KONtx.messages, "onBroadcast", this);
-            
-            this._boundMessageBroadcast = null;
-            
-        }
-        
     },
     // this routine further normalizes the incoming data so we have a standard payload for the renderer to work with
     onDataReceived: function (event) {
         
         if (event.type == "onDataReceived") {
-common.debug.level[3] && common.debug.log("onDataReceived","event",common.dump(event.payload));
+common.debug.level[3] && KONtx.cc.log("onDataReceived","event",common.dump(event.payload));
             
             var data = event.payload.tt;
             
@@ -731,15 +777,15 @@ common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onDataReceived", commo
         }
         
     },
-    //
-    onPlayerKeyPress: function (event) {
-common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "onPlayerKeyPress");
-common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onPlayerKeyPress", common.dump(event,3));
+    // fired when the stop button is selected on the transport control
+    onControlStop: function (event) {
+common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "onControlStop");
+common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onControlStop", common.dump(event,3));
         
         this.fire("onDeactivate");
         
     },
-    //
+    // fired when the state of the mediaplayer changes
     onPlayerStateChange: function (event) {
         
         var playerStates = KONtx.cc.getPlayerStates();
@@ -759,7 +805,7 @@ common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onPlayerStateChange", 
         }
         
     },
-    // 
+    // fired when the time index of the mediaplayer changes
     onPlayerTimeIndexChange: function (event) {
         
         if (this.data.fulfilled && this.data.body.length) {

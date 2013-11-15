@@ -52,8 +52,6 @@ create option list for languages (onCaptionListRequest)
 
 /** NOTES **************************************************************************************************************
 
-Under "KONtx.media.CaptionsEntry" remove the first line containing "KONtx.mediaplayer.initialize();"
-
 ***********************************************************************************************************************/
 
 /** Reference Documentation ********************************************************************************************

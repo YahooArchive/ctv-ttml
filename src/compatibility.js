@@ -1,4 +1,4 @@
-/*******************************************************************************
+/***********************************************************************************************************************
 Copyright (c) 2013, Yahoo.
 All rights reserved.
 
@@ -31,7 +31,7 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*******************************************************************************/
+***********************************************************************************************************************/
 // < 1.6
 _production = (typeof(_production) === "undefined") ? _PRODUCTION : _production;
 // < 1.5
@@ -39,7 +39,251 @@ if (typeof(common) === "undefined") {
 	common = {};
 	platform = ((typeof(platform) === "undefined") || (platform === null)) ? {} : platform;
 	(function common_compatibility_singleton() {
+		//
+		/** platform compat *******************************************************************************************/
+		//
+		var defaultVendorMark = "A";
+		var defaultVendorName = "NOMATCH";
+		var platformVendorUniqueIdKey = "platform-vendor-uid";
+		var platformVendorListKey = "platform-vendor-list";
+		var vendorMap = {
+			//
+			"ADMIN": "ADMIN",
+			"OEMTEST": "OEMTEST",
+			"OEM": "OEM1",
+			"SIM": "OEM1",
+			"TV OEM Name": "OEM1",
+			//
+			"SAMSUNG": "SAMSUNG",
+			"CAPELLA": "SAMSUNG",
+			"SEC-VD": "SAMSUNG",
+			"LG": "LG",
+			"LG Electron": "LG",
+			"LG Electronics Inc": "LG",
+			"SONY": "SONY",
+			"TOSHIBA": "TOSHIBA",
+			"VIZIO": "VIZIO",
+			"VIZIO Inc": "VIZIO",
+			"vizio-trident": "VIZIO",
+			"HAIER": "HAIER",
+			"HISENSE": "HISENSE",
+			"JVC": "JVC",
+			"TCL": "TCL",
+			"AOC": "AOC"
+			//
+		};
+		var getVendorType = function () {
+			
+			var result = defaultVendorName;
+			
+			var oem = getOEMName().toLowerCase();
+			
+			for (var vendor in vendorMap) {
+				
+				if (oem.indexOf(vendor.toLowerCase()) != -1) {
+					
+					result = vendorMap[vendor];
+					
+					break;
+					
+				}
+				
+			}
+			
+			return result;
+			
+		};
+		var getVendorMark = function () {
+			
+			var mark = null;
+			
+			var result = defaultVendorMark;
+			
+			var vendorType = ("vendor" in platform) ? platform.vendor.type : getVendorType();
+			
+			if (platformVendorListKey in platform.config) {
+				
+				for (mark in platform.config[platformVendorListKey]) {
+					
+					if (vendorType == platform.config[platformVendorListKey][mark].type) {
+						
+						result = mark;
+						
+						break;
+						
+					}
+					
+				}
+				
+			}
+			
+			return result;
+			
+		};
+		var getOEMName = function () {
+			
+			var result = "sim";
+				
+			if (typeof(tv) !== "undefined") {
+				
+				if ("system" in tv) {
+					
+					if ("OEM" in tv.system) {
+						
+						result = tv.system.OEM;
+						
+					}
+					
+				}
+				
+			}
+			
+			return result;
+			
+		};
+		var getDeviceInfo = function () {
+			
+			var result = "sim";
+				
+			if (typeof(tv) !== "undefined") {
+				
+				if ("system" in tv) {
+					
+					if ("deviceInfo" in tv.system) {
+						
+						if (tv.system.deviceInfo) {
+							
+							result = tv.system.deviceInfo;
+							
+						}
+						
+					}
+					
+				}
+				
+			}
+			
+			return result;
+			
+		};
+		var getBuildType = function () {
+			
+			/*
+			yctv-simversion
+			wdk
+			sdk
+			*/
+			
+			var index = 0;
+			
+			var type = "oem";
+			
+			var list = ["sim", "wdk", "sdk"];
+			
+			var defaultDeviceInfo = getDeviceInfo();
+			
+			for (index = 0; index < list.length; index++) {
+				
+				if (defaultDeviceInfo.indexOf(list[index]) != -1) {
+					
+					type = "sim";
+					
+					break;
+					
+				}
+				
+			}
+			
+			return type;
+			
+		};
+		var getBuildStatus = function () {
+			
+			return _production ? "prod" : "dev";
+			
+		};
+		var getBuildInfo = function () {
+			
+			return {
+				type: getBuildType(),
+				status: getBuildStatus()
+			};
+			
+		};
+		var getVendorInfo = function () {
+			
+			return {
+				name: getOEMName(),
+				type: getVendorType(),
+				model: null
+			};
+			
+		};
+		platform.vendor = getVendorInfo();
+		platform.build = getBuildInfo();
 		platform.config = ("config" in platform) ? platform.config : {};
+		if (!(platformVendorListKey in platform.config)) {
+			
+			platform.config[platformVendorListKey] = {
+				"A": {
+					type: "ADMIN"
+				},
+				"B": {
+					type: "SIM"
+				},
+				"C": {
+					type: "SAMSUNG"
+				},
+				"D": {
+					type: "SONY"
+				},
+				"E": {
+					type: "VIZIO"
+				},
+				"F": {
+					type: "LG"
+				},
+				"G": {
+					type: "HISENSE"
+				},
+				"H": {
+					type: "TOSHIBA"
+				},
+				"J": {
+					type: "JVC"
+				},
+				"K": {
+					type: "DLINK"
+				},
+				"L": {
+					type: "HAIER"
+				},
+				"M": {
+					type: "VESTEL"
+				},
+				"N": {
+					type: "TCL"
+				},
+				"O": {
+					type: "OEM1"
+				},
+				"P": {
+					type: "AOC"
+				},
+				"Q": {
+					type: "WDK"
+				}
+			};
+			
+		}
+		if (!(platformVendorUniqueIdKey in platform.config)) {
+			
+			platform.config[platformVendorUniqueIdKey] = getVendorMark();
+			
+		}
+		//
+		/** common compat *********************************************************************************************/
+		//
 		common.dump = KONtx.Class.helpers.dump;
 		common.merge = KONtx.Class.helpers.merge;
 		common.clone = KONtx.Class.helpers.unlink;
@@ -288,3 +532,4 @@ if (!("getDefaultViewportBounds" in KONtx.mediaplayer)) {
 		};
 	};
 }
+//

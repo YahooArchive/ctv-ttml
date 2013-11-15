@@ -46,7 +46,7 @@
     Caching ttml data during state changes to improve performance
     No longer generating all DOM regions at start up but instead doing it as needed to improve performance
     Abstracting shared routines to KONtx.cc namespace to improve performance
-
+	
 0.0.4
     Fixed bug in PAUSE and STOP handlers which could freeze the sequence interval in the future
     Removed lots of log statements to improve performance
@@ -103,14 +103,14 @@
     adding a null check when setting up the platform var because old widgets could be including a platform package that
     would not load due to security issues(yahooSettings not available to non-yahoo-signed apps) and produce a global
     platform var which is the object null
-
+	
 0.0.14
     removed a check which was preventing app level CC modules from overloading the transport control
     added hooks to the transport control which allow it to update its state during a showview and respond to external activation and deactivation of CC
     fixed bug when activating/deactivating CC before the mediaplayer has a playlist entry
     adding default values for the captions object during the setup of the playlist. this was causing certain playlist setups to fail
     added redundant checks when performing lookups on the internal _streams table in the mediaplayer
-
+	
 0.0.15
     changing platform.currentProfileData => currentProfileData to support CC module in unsigned apps on old samsung TVs
     
@@ -127,7 +127,7 @@
 0.0.18
     added extra parsing when flattening the paragraphs allowing us to do some light piecing together of span fragments
     changed the KONtx.cc.config.longFormContentTimingReductionAdjustment to accept seconds instead of minutes
-
+	
 0.0.19
     added KONtx.cc.config.yqlHost as the default entry point for the rest api
     added KONtx.cc.config.yqlQuery as the default normalization query sent to yql
@@ -145,7 +145,7 @@
     
 0.0.21
     added licensing
-
+	
 0.0.22
     added missing common.typeOf to compatibility(not sure where it went)
     
@@ -155,3 +155,17 @@
 0.0.24
 	changed the default value for KONtx.cc.config.yqlHost to our production cname in order to access our ctv data table
 	
+0.0.25
+	removed unused publisher/subscriber methods in the CaptionsOverlay
+	added fork for hardware support
+		this is the first iteration and is only about 70% complete due to engine API blockers
+		expect the internal structure to change
+		there will be no noticable implementation difference from a consumer(author or user) standpoint
+	added author flag to override hardware renderer and forcefully use software renderer; auto|yahoo
+	improved log visibility for hardware support, renderer type, and parser type
+	improved log visibility for activate/deactivate toggle
+	added rendererType flag to KONtx.cc.Captions; default is "auto"; new KONtx.cc.Captions({rendererType: "auto"|"yahoo"})
+	
+0.0.26
+	updating engine API integration
+	added enable/disable for hardware renderer

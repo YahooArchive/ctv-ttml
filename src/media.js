@@ -1,4 +1,4 @@
-/*******************************************************************************
+/***********************************************************************************************************************
 Copyright (c) 2013, Yahoo.
 All rights reserved.
 
@@ -31,7 +31,7 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*******************************************************************************/
+***********************************************************************************************************************/
 //
 delete KONtx.media.Captions;
 //
@@ -43,9 +43,15 @@ KONtx.media.Captions = function constructor_Captions(config) {
 	
     if (config) {
 common.debug.level[5] && common.debug.log("config", common.dump(config));
-        
+		
+		if (config.renderer) {
+			// see constructor of KONtx.cc for available types
+			KONtx.cc.renderer = config.renderer;
+			
+		}
+		
         if (config.parser && (common.typeOf(config.parser) == "function")) {
-            
+            // must follow pattern defined in Captions.parser
             this.parser = config.parser;
             
         }
@@ -138,23 +144,19 @@ KONtx.media.Captions.prototype = {
      * @description takes a ttml url and returns a json result
      */
     parser: function (url, callback) {
-common.debug.level[3] && common.debug.log("default parser");
+common.debug.level[3] && KONtx.cc.log("Captions", "parser", "default parser");
         url = (!_PRODUCTION && KONtx.cc.config.debug_ttmlLocation) ? KONtx.cc.config.debug_ttmlLocation : url;
         KONtx.cc.fetch({
             url: KONtx.cc.config.yqlHost + "?format=json&q=" + KONtx.cc.config.yqlQuery.replace("%1", url),
             success: function (xhr) {
                 var json = JSON.parse(xhr.responseText).query.results;
-common.debug.level[4] && KONtx.cc.log("CaptionsEntry", "fetchHead", "success", common.dump(json, 7));
+common.debug.level[4] && KONtx.cc.log("Captions", "parser", "fetch", "success", common.dump(json, 7));
                 callback(json);
             }
         });
     }
 	//
 };
-//
-/*******************************************************************************
-
-*******************************************************************************/
 //
 delete KONtx.media.CaptionsEntry;
 //

@@ -1,4 +1,4 @@
-/*******************************************************************************
+/***********************************************************************************************************************
 Copyright (c) 2013, Yahoo.
 All rights reserved.
 
@@ -31,7 +31,7 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*******************************************************************************/
+***********************************************************************************************************************/
 // 
 KONtx.cc = (function kontx_cc_singleton() {
 	//
@@ -43,27 +43,38 @@ KONtx.cc = (function kontx_cc_singleton() {
     // this is handy so we can view more verobse messages from the mediaplayer
     common.debug.MEDIA = (_production && common.debug.level[3]) ? true : false;
 	//
-	/**************************************************************************/
+	/******************************************************************************************************************/
+	//
+	var rendererType = "";
+	//
+	var languageStorageKey = "captionsLanguage";
+	//
+	var activatedStorageKey = "captionsActivated";
 	//
 	var instance = {
 		//
 		name: "CC",
 		//
-		version: "0.0.24",
+		version: "0.0.26",
 		//
 		log: common.debug.log,
 		//
 		toString: common.toString,
 		//
 		config: {
-            //
+            // this is a constant that we need to keep track of because it is not exposed by the engine
+			// it is currently handing off the TVInput class
+			SUPPORT_CC: 2,
+            // default language
             defaultLanguage: "en",
-            languageStorageKey: "captionsLanguage",
-            activatedStorageKey: "captionsActivated",
             // used to determine if the module is being loaded locally from an app or globally from the framework
 			modulePath: KONtx.config.ccModulePath,
             // location of module images
 			assetPath: KONtx.config.ccModulePath + "assets/" + (screen.width + "x" + screen.height) + "/",
+			// these values determine if the hardware fork for the renderer is used or not
+			rendererTypes: ["auto", "yahoo"],
+			// the default renderer path
+			rendererDefaultIndex: 0,
             // the yql entry point
 			yqlHost: "http://ctv.yql.yahooapis.com/v1/public/yql",
             // the query used to normalize the ttml document
@@ -93,7 +104,7 @@ KONtx.cc = (function kontx_cc_singleton() {
             // a ttml document uri that will be force loaded instead of the uri provided by the video
             // common.debug.level must be >= 2
             debug_ttmlLocation: common.debug.level[2] ? "" : null,
-            //
+			//
 		},
         //
         playerStatesLegend: (function () {
@@ -118,13 +129,36 @@ KONtx.cc = (function kontx_cc_singleton() {
             
         })(),
         //
-        /**********************************************************************/
-        // 
+        /**************************************************************************************************************/
+        //
+		get renderer() {
+			
+			var type = rendererType;
+			
+			// check for SDK/ADK/WDK builds and force "yahoo"
+			if (platform.build.type == "sim") {
+				
+				type = this.config.rendererTypes[1];
+				
+common.debug.level[2] && this.log("renderer", "detected build type \"" + platform.build.type + "\" so forcing (KONtx.cc.renderer == " + type + ")");
+				
+			}
+			
+			return type;
+			
+		},
+		//
+		set renderer(type) {
+			
+			rendererType = (type && (this.config.rendererTypes.indexOf(type) != -1)) ? type : this.config.rendererTypes[this.config.rendererDefaultIndex];
+			
+		},
+		// 
         get enabled() {
             
-            var state = Boolean(Number(currentProfileData.get(this.config.activatedStorageKey)));
+            var state = Boolean(Number(currentProfileData.get(activatedStorageKey)));
             
-common.debug.level[0] && this.log("enabled", "getting cc button activation state: " + state);
+//common.debug.level[3] && this.log("enabled", "getting cc button activation state: " + state);
             
             return state;
             
@@ -134,25 +168,25 @@ common.debug.level[0] && this.log("enabled", "getting cc button activation state
             
             var state = String(Number(bool));
             
-common.debug.level[0] && this.log("enabled", "setting cc button activation state: " + state);
+//common.debug.level[3] && this.log("enabled", "setting cc button activation state: " + state);
             
-            currentProfileData.set(this.config.activatedStorageKey, state);
+            currentProfileData.set(activatedStorageKey, state);
             
         },
         //
-        /**********************************************************************/
+        /**************************************************************************************************************/
         //
         getLanguage: function () {
             
-            var lang = currentProfileData.get(this.config.languageStorageKey);
+            var lang = currentProfileData.get(languageStorageKey);
             
 common.debug.level[0] && this.log("getLanguage", "getting profile selected captions language: " + lang);
             
             if (!lang) {
                 
-common.debug.level[0] && this.log("getLanguage", "no captions language found, saving now as: " + lang);
-                
                 lang = this.config.defaultLanguage;
+                
+common.debug.level[0] && this.log("getLanguage", "no captions language found, saving now as: " + lang);
                 
                 this.setLanguage(lang);
                 
@@ -166,7 +200,7 @@ common.debug.level[0] && this.log("getLanguage", "no captions language found, sa
             
 common.debug.level[0] && this.log("setLanguage", "setting profile selected captions language: " + lang);
             
-            currentProfileData.set(this.config.languageStorageKey, lang);
+            currentProfileData.set(languageStorageKey, lang);
             
         },
         // 
@@ -183,7 +217,7 @@ common.debug.level[0] && this.log("setLanguage", "setting profile selected capti
             return KONtx.mediaplayer.constants.states;
             
         },
-        /**
+		/**
          * @description fetches JSON formatted XML via YQL
          */
         fetch: function (config) {
@@ -249,6 +283,10 @@ common.debug.level[0] && this.log("setLanguage", "setting profile selected capti
         }
 		//
 	};
+	//
+	/******************************************************************************************************************/
+	// set default renderer path based on a global
+	instance.renderer = KONtx.config.ccRendererType;
 	//
 	return instance;
 	// 

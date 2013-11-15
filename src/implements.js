@@ -270,8 +270,17 @@ common.debug.level[5] && KONtx.cc.log("MediaTransportOverlay", "onSourceUpdated"
                 
                 if (this.config.captionsButton && this._controls.captionsbutton) {
                     
-                    var captionsFound = event.payload.player.media.currentEntry.getCaptions();
-                    
+					var player = event.payload.player;
+                    var captionsFound = player.media.currentEntry.getCaptions();
+                    var tvapi = player.tvapi;
+					//tvapi.path
+					//tvapi.control
+					//tvapi.status
+					var input = tvapi.input;
+					//common.debug.log("input");
+					//_dump(input)
+					
+					// check here for 
 common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "onSourceUpdated", "onPlayPlaylistEntry", "captions " + (captionsFound ? "" : "not ") + "found in playlist, " + (captionsFound ? "en" : "dis") + "abling the CC button");
                     
                     if (captionsFound) {
@@ -279,13 +288,14 @@ common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "onSourceUpdated"
                         this._controls.captionsbutton.setDisabled(false);
                         
 common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "onSourceUpdated", "onPlayPlaylistEntry", "profile user has " + (KONtx.cc.enabled ? "" : "not ") + "activated cc");
-                          
+                        
                     } else {
                         
                         this._controls.captionsbutton.setDisabled(true);
                        
                     }
-                    //need to fire it even if there are no captions, otherwise overlay may have old captions
+					
+                    // we need to fire this even if there are no captions, otherwise overlay may have old captions
                     if (KONtx.cc.enabled) {
                         this.fire("onActivateClosedCaption");   
                     }
