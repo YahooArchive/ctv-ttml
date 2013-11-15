@@ -122,19 +122,19 @@ If you want to force the use of the software parser/renderer, regardless of hard
 code.
 
 // explicit forced software renderer
-new KONtx.media.Captions({
-	renderer: "yahoo"
-});
+	new KONtx.media.Captions({
+		renderer: "yahoo"
+	});
 
 The below are examples of the default implementation. Both of these examples do the same thing.
 
 // explicit default
-new KONtx.media.Captions({
-	renderer: "auto"
-});
+	new KONtx.media.Captions({
+		renderer: "auto"
+	});
 
 // implicit default
-new KONtx.media.Captions();
+	new KONtx.media.Captions();
 
 It should be noted that there is no way to force the hardware renderer. This is because not all vendors support the
 hardware path. If "auto" is chosen then we will detect the hardware support and, if available, use it but if it is not
