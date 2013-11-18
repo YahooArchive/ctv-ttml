@@ -169,3 +169,11 @@
 0.0.26
 	updating engine API integration
 	added enable/disable for hardware renderer
+	
+0.0.27
+	removed auto activation during load of transport control. now relying soley on the playlist activation from the mediaplayer
+	fixed bug with multiple activation calls being made. no longer loading the module with the framework
+	fixed bug where overlay could remain during multi-playlist entries where some have cc and some do not
+	fixed bug where button was being forcefully deactivated on re-entry to a media playback view
+	made sure parsing routine is being executed only after a playlist activation
+	

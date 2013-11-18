@@ -153,6 +153,44 @@ common.debug.level[2] && this.log("renderer", "detected build type \"" + platfor
 			rendererType = (type && (this.config.rendererTypes.indexOf(type) != -1)) ? type : this.config.rendererTypes[this.config.rendererDefaultIndex];
 			
 		},
+		//
+		useHardware: function () {
+			
+			var hardwareSupportAvailable = false;
+			
+			var activeInput = this.getActiveInput();
+			
+			if (activeInput) {
+				
+				if ("doesSupport" in activeInput) {
+					
+					hardwareSupportAvailable = activeInput.doesSupport(this.config.SUPPORT_CC);
+					
+				}
+				
+			}
+common.debug.level[3] && this.log("CaptionsOverlay", "useHardware", "hardwareSupportAvailable", String(hardwareSupportAvailable));
+			
+			var useHardwareRenderer = (this.renderer == "auto") ? true : false;
+common.debug.level[3] && this.log("CaptionsOverlay", "useHardware", "useHardwareRenderer", String(useHardwareRenderer));
+			
+			if (hardwareSupportAvailable && useHardwareRenderer) {
+				
+				return true;
+				
+			} else {
+				
+				return false;
+				
+			}
+			
+		},
+		//
+		getActiveInput: function () {
+			
+			return KONtx.mediaplayer.tvapi.activeInput;
+			
+		},
 		// 
         get enabled() {
             

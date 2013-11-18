@@ -215,48 +215,6 @@ KONtx.control.MediaTransportOverlay.implement({
             activeSrc: common.manifest.get("cc-asset-button-caption-active").file
         });
         
-        this.onActivateClosedCaption.subscribeTo(this, "onActivateClosedCaption", this);
-        
-        this.onDeactivateClosedCaption.subscribeTo(this, "onDeactivateClosedCaption", this);
-        
-        this.onAppendClosedCaption.subscribeTo(this, "onAppend", this);
-        
-    },
-    //
-    onAppendClosedCaption: function (event) {
-        
-        this.onUpdateClosedCaption.subscribeTo(this.getView(), "onUpdateView", this);
-        
-    },
-    //
-    onUpdateClosedCaption: function (event) {
-        
-        this.fire(KONtx.cc.enabled ? "onActivateClosedCaption" : "onDeactivateClosedCaption");
-        
-    },
-    //
-    onActivateClosedCaption: function (event) {
-        
-        if (this.config.captionsButton && this._controls.captionsbutton) {
-            
-            if (KONtx.cc.enabled) {
-                
-                this._controls.captionsbutton.fire("onActivate");
-                
-            }
-            
-        }
-        
-    },
-    //
-    onDeactivateClosedCaption: function (event) {
-        
-        if (this.config.captionsButton && this._controls.captionsbutton) {
-            
-            this._controls.captionsbutton.fire("onDeactivate");
-            
-        }
-        
     },
     //
     _onSourceUpdated: function (event) {
@@ -269,37 +227,37 @@ KONtx.control.MediaTransportOverlay.implement({
 common.debug.level[5] && KONtx.cc.log("MediaTransportOverlay", "onSourceUpdated", "onPlayPlaylistEntry", "event.payload", common.dump(event.payload, 3));
                 
                 if (this.config.captionsButton && this._controls.captionsbutton) {
-                    
-					var player = event.payload.player;
-                    var captionsFound = player.media.currentEntry.getCaptions();
-                    var tvapi = player.tvapi;
-					//tvapi.path
-					//tvapi.control
-					//tvapi.status
-					var input = tvapi.input;
-					//common.debug.log("input");
-					//_dump(input)
 					
-					// check here for 
+                    var captionsFound = event.payload.player.media.currentEntry.getCaptions();
+					
 common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "onSourceUpdated", "onPlayPlaylistEntry", "captions " + (captionsFound ? "" : "not ") + "found in playlist, " + (captionsFound ? "en" : "dis") + "abling the CC button");
                     
+					var button = this._controls.captionsbutton;
+					
                     if (captionsFound) {
-                        
-                        this._controls.captionsbutton.setDisabled(false);
-                        
+						
+						button.setDisabled(false);
+						
+						if (KONtx.cc.enabled) {
+							
+							button.fire("onActivate");
+							
+						}
+						
 common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "onSourceUpdated", "onPlayPlaylistEntry", "profile user has " + (KONtx.cc.enabled ? "" : "not ") + "activated cc");
                         
                     } else {
+						
+						button.setDisabled(true);
+						
+						if (KONtx.cc.enabled) {
+							
+							button.fire("onDeactivate");
+							
+						}
                         
-                        this._controls.captionsbutton.setDisabled(true);
-                       
                     }
 					
-                    // we need to fire this even if there are no captions, otherwise overlay may have old captions
-                    if (KONtx.cc.enabled) {
-                        this.fire("onActivateClosedCaption");   
-                    }
-                    
                 }
                 
                 break;
@@ -355,78 +313,6 @@ common.debug.level[3] && KONtx.cc.log("MediaTransportOverlay", "_createCaptionsB
                 
             },
             events: {
-                onCaptionListRequest: function onCaptionListRequest(event) {
-                    
-                    // phase 2 implementation
-                    
-                },
-                onDeactivate: function onDeactivate(event) {
-common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "captionsbutton", "deactivating captions");
-                    
-                    this.activated = false;
-                    
-                    KONtx.cc.enabled = this.activated;
-                    
-                    this.content.setSource(this.sources.normalSrc);
-                    
-                    if (KONtx.mediaplayer.playlist.currentEntry) {
-                        
-                        var captions = event.payload.captions || KONtx.mediaplayer.playlist.currentEntry.getCaptions();
-                        
-                        var lang = event.payload.lang || KONtx.cc.getLanguage();
-                        
-                        if (("_overlay" in this.owner) && ("captions" in this.owner._overlay)) {
-                            
-                            this.owner._overlay.captions.fire("onDeactivate", {
-                                url: captions ? captions.getEntryByLanguage(lang).url : null,
-                                lang: lang
-                            });
-                            
-                        }
-                        
-                    }
-                    
-                },
-                onActivate: function onActivate(event) {
-common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "captionsbutton", "activating captions");
-                    
-                    this.activated = true;
-                    
-                    KONtx.cc.enabled = this.activated;
-                    
-                    this.content.setSource(this.sources.activeSrc);
-                    
-                    if (KONtx.mediaplayer.playlist.currentEntry) {
-                        
-                        var captions = event.payload.captions || KONtx.mediaplayer.playlist.currentEntry.getCaptions();
-                        
-                        var lang = event.payload.lang || KONtx.cc.getLanguage();
-                        
-                        if (captions) {
-                            
-                            // setup CaptionsOverlay
-                            if (!("captions" in this.owner._overlay)) {
-                                
-                                this.owner._overlay.captions = new KONtx.control.CaptionsOverlay().appendTo(this.getView());
-                                
-                            }
-                            
-                            this.owner._overlay.captions.fire("onActivate", {
-                                url: captions.getEntryByLanguage(lang).url,
-                                lang: lang
-                            });
-                            
-                        } else {
-                        	//cc is activated but the video does not have cc
-                        	if("captions" in this.owner._overlay) {
-                        		this.owner._overlay.captions.fire("onDeactivate");
-                        		delete this.owner._overlay.captions;
-                        	}
-                        }
-                        
-                    }
-                    
-                }, 
                 onSelect: function onSelect(event) {
 common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "captionsbutton", "selecting captions button");
                     
@@ -475,7 +361,68 @@ common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "captionsbutton",
                         
                     }
                     
-                }
+                },
+                onActivate: function onActivate(event) {
+common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "captionsbutton", "activating captions");
+                    
+					this.activated = true;
+                    
+                    KONtx.cc.enabled = this.activated;
+                    
+                    this.content.setSource(this.sources.activeSrc);
+                    
+                    if (KONtx.mediaplayer.playlist.currentEntry) {
+                        
+                        var captions = event.payload.captions || KONtx.mediaplayer.playlist.currentEntry.getCaptions();
+                        
+                        var lang = event.payload.lang || KONtx.cc.getLanguage();
+                        
+                        if (captions) {
+                            
+                            // setup CaptionsOverlay
+                            if (!("captions" in this.owner._overlay)) {
+                                
+                                this.owner._overlay.captions = new KONtx.control.CaptionsOverlay().appendTo(this.getView());
+                                
+                            }
+							
+							this.owner._overlay.captions.fire("onActivate", {
+								url: captions.getEntryByLanguage(lang).url,
+								lang: lang
+							});
+							
+                        } else {
+							
+                        	// cc is activated but the video does not have cc
+                        	if ("captions" in this.owner._overlay) {
+                        		this.owner._overlay.captions.fire("onDeactivate");
+                        		delete this.owner._overlay.captions;
+                        	}
+                        }
+                        
+                    }
+                    
+                }, 
+                onDeactivate: function onDeactivate(event) {
+common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "captionsbutton", "deactivating captions");
+                    
+                    this.activated = false;
+                    
+                    KONtx.cc.enabled = this.activated;
+                    
+                    this.content.setSource(this.sources.normalSrc);
+                    
+					if ("captions" in this.owner._overlay) {
+						
+						this.owner._overlay.captions.fire("onDeactivate");
+						
+					}
+                },
+                onCaptionListRequest: function onCaptionListRequest(event) {
+                    
+                    // phase 2 implementation
+                    
+                },
             }
         }).appendTo(this);
         
