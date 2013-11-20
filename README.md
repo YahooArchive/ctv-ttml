@@ -118,10 +118,10 @@ provided in the mediaplayer's transport control.
 If the CC module detects that it is being used in the Yahoo Connected TV Simulator it will force the use of the software parser/renderer to allow
 you to see if your implementation is working correctly.
 
-If you want to force the use of the software parser/renderer, regardless of hardware support, you can used the following
-code.
+If you want to force the use of the software parser/renderer, regardless of hardware support, you can use the following
+code:
 
-// explicit forced software renderer
+	// explicit forced software renderer
 	
 	new KONtx.media.Captions({
 		renderer: "yahoo"
@@ -129,18 +129,18 @@ code.
 
 Below are examples of the default implementation. Both of these examples do the same thing.
 
-// explicit default
+	// explicit default
 	
 	new KONtx.media.Captions({
 		renderer: "auto"
 	});
 
-// implicit default
+	// implicit default
 	
 	new KONtx.media.Captions();
 
 It should be noted that there is no way to force the hardware renderer. This is because not all device partners support the
-hardware path. If "auto" is chosen then Yahoo will detect the hardware support and, if available, use it but if it is not
+hardware path. If "auto" is chosen then Yahoo will detect the hardware support and, if available, use it, but if it is not
 available Yahoo will fall back to the software path automatically.
 
 ------------------------------------------------------------------------------------------------------------------------
