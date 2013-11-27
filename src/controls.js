@@ -42,6 +42,7 @@ This object does a few things.
 4) it consumes the ttml json payload
 5) it renders the ttml content
 */
+//
 KONtx.control.CaptionsOverlay = new KONtx.Class({
     ClassName: "CaptionsOverlay",
 	Extends: KONtx.element.Core,
@@ -61,7 +62,6 @@ KONtx.control.CaptionsOverlay = new KONtx.Class({
             nextInterval: 0,
             nextCaptionIndex: 0,
             regionsActive: [],
-			dataDelivered: false,
         },
         data: {
             // used as an id to determine if we need to reparse
@@ -69,7 +69,7 @@ KONtx.control.CaptionsOverlay = new KONtx.Class({
             id: "",
             // flag for determining if the parser routine has completed
             // is set after the onDataReceived routine completes
-            fulfilled: true,
+            fulfilled: false,
             // a pointer to the caption object for the current entry in the current playlist
             captions: {},
             // the normalized head of the ttml document
@@ -82,6 +82,10 @@ KONtx.control.CaptionsOverlay = new KONtx.Class({
     },
     // runtime
     state: {},
+	//
+	hardwareStateSet: false,
+	//
+	useHardware: null,
     // storage
     data: {},
     // nodes
@@ -106,8 +110,14 @@ KONtx.control.CaptionsOverlay = new KONtx.Class({
 		// co.fire("onDataReceived")
         this.onDataReceived.subscribeTo(this, "onDataReceived", this);
         
+		// defaults applied to containing frame
+		this.element.style.fontSize = this.config.fontSize;
+		this.element.style.color = "#FFF";
+		
 	},
     //
+	//-- preprocessing -------------------------------------------------------------------------------------------------
+	//
     processConfig: function (data) {
         
         var config = {};
@@ -169,16 +179,14 @@ common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "processBody", "process
                 
                 entry = content[index];
                 
-                entry.begin = this.convertClockToFractionalSeconds(entry.begin);
+                entry.begin = this.convertTimeSignature(entry.begin);
                 
-                entry.end = this.convertClockToFractionalSeconds(entry.end);
+                entry.end = this.convertTimeSignature(entry.end);
                 
                 // if no region is specified, supply a default
                 entry.region = ("region" in entry) ? entry.region : defaultRegion;
                 
                 entry.styles = this.populateEntryStyles(entry, defaultStyle);
-                
-                entry.content = this.flattenEntryContent(entry);
                 
 common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "processBody", "entry[" + index + "]", common.dump(entry,5));
                 
@@ -194,7 +202,9 @@ common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "processBody", "complet
         return body;
         
     },
-    //
+	//
+	//-- preprocessing helpers -----------------------------------------------------------------------------------------
+	//
     structureList: function (data, namespace) {
         
         var result = {};
@@ -231,82 +241,6 @@ common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "processBody", "complet
         
         return result;
         
-    },
-    //
-    flattenEntryContent: function (entry) {
-        var content = "";
-        var contentList = [];
-        var item = null;
-        var type = null;
-        var index = 0;
-        
-        if ("content" in entry) {
-            
-            content = entry.content;
-            
-        } else if ("span" in entry) {
-            
-            if (common.typeOf(entry.span) == "array") {
-                
-                contentList = [];
-                
-                for (index = 0; index < entry.span.length; index++) {
-                    
-                    item = entry.span[index];
-                    
-                    type = common.typeOf(item);
-                    
-                    switch (type) {
-                        
-                        case "string":
-                            
-                            contentList.push(item);
-                            
-                            break;
-                        
-                        case "object":
-                            
-                            if ("content" in item) {
-                                
-                                contentList.push(item.content);
-                                
-                            }
-                            
-                            break;
-                    }
-                    
-                }
-                
-                if (contentList.length) {
-                    
-                    content = contentList.join(" ");
-                    
-                }
-                
-            } else {
-                
-                if ("content" in entry.span) {
-                    
-                    content += entry.span.content;
-                    
-                }
-                
-            }
-            
-            delete entry.span;
-            
-        }
-        
-        if ("br" in entry) {
-            
-            delete entry.br;
-            
-        }
-        
-        // remove extra whitespace
-        content = common.String.cleanWhitespace(content);
-        
-        return content;
     },
     //
     populateEntryStyles: function (entry, defaultStyle) {
@@ -527,7 +461,7 @@ common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "processBody", "complet
         
     },
     //
-    convertClockToFractionalSeconds: function (clock) {
+    convertTimeSignature: function (clock) {
         
         var split = clock.split(":");
         
@@ -582,16 +516,421 @@ common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "processBody", "complet
             modifier = KONtx.cc.config.debug_timeSignatureOffset;
         }
         
-        return ((60 * 2) * Number(split[0])) + (60 * Number(split[1])) + Number(split[2]) + Number(fraction) - modifier;
+        return ((60 * 60) * Number(split[0])) + (60 * Number(split[1])) + Number(split[2]) + Number(fraction) - modifier;
         
     },
 	//
-    /******************************************************************************************************************/
-    // fired when this control is appended to the dom
+	//-- activation/deactivation ---------------------------------------------------------------------------------------
+	//
+	setHardwareState: function (state) {
+		
+		var engineInterface = KONtx.cc.engineInterface;
+		
+		if (engineInterface) {
+			
+			if (state) {
+				// activate
+				
+				if (KONtx.cc.playerActive) {
+					
+					if (!this.state.hardwareStateSet) {
+common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "setHardwareState", "sending cc urls to firmware");
+						var entry = this.data.captions.getDefaultEntry();
+						
+						var urls = [entry.url];
+common.debug.level[2] && KONtx.cc.log("CaptionsOverlay", "setHardwareState", common.dump(urls));
+						
+						engineInterface.setClosedCaptionUrls(urls);
+						
+					}
+					
+					this.state.hardwareStateSet = true;
+					
+					if (!engineInterface.state) {
+common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "setHardwareState", "sending activate message to firmware");
+						
+						engineInterface.state = true;
+						
+					}
+					
+				}
+				
+			} else {
+				// deactivate
+				
+				if (engineInterface.state) {
+common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "setHardwareState", "sending deactivate message to firmware");
+					
+					engineInterface.state = false;
+					
+				}
+				
+			}
+			
+		}
+		
+	},
+	//
+	setSoftwareState: function (state) {
+		
+		if (state) {
+			// active
+			
+			var captions = this.data.captions;
+			
+			var parser = captions.parser;
+			
+			var entry = captions.getDefaultEntry();
+			
+			if (entry) {
+				
+				if (entry.parser && (common.typeOf(entry.parser) == "function")) {
+					
+					parser = entry.parser;
+					
+				}
+				
+				parser(entry.url, common.bind(function (result) {
+					
+					this.fire("onDataReceived", result);
+					
+				}, this));
+				
+			}
+			
+		} else {
+			// deactive
+			
+			var regions = this.regions;
+			
+			var index = null;
+			
+			for (index in regions) {
+				
+				regions[index].visible = false;
+				
+common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "setSoftwareState", "region", index);
+				
+			}
+		}
+		
+	},
+	//
+	//-- message bindings ----------------------------------------------------------------------------------------------
+	//
+	bindControlStop: function () {
+		
+		if (!this._boundControlStop) {
+			
+			this._boundControlStop = this.onControlStop.subscribeTo(KONtx.mediaplayer, "onControlStop", this);
+			
+		}
+		
+	},
+	//
+	unbindControlStop: function () {
+		
+        if (this._boundControlStop) {
+            
+            this._boundControlStop.unsubscribeFrom(KONtx.mediaplayer, "onControlStop", this);
+            
+            this._boundControlStop = null;
+            
+        }
+	},
+	//
+	bindStateChange: function () {
+		
+		if (!this._boundOnStateChange) {
+			
+			this._boundOnStateChange = this.onPlayerStateChange.subscribeTo(KONtx.mediaplayer, "onStateChange", this);
+			
+		}
+		
+	},
+	//
+	unbindStateChange: function () {
+		
+        if (this._boundOnStateChange) {
+            
+            this._boundOnStateChange.unsubscribeFrom(KONtx.mediaplayer, "onStateChange", this);
+            
+            this._boundOnStateChange = null;
+            
+        }
+		
+	},
+	//
+	bindTimeIndexChange: function () {
+		
+		if (!this._boundOnTimeIndexChange) {
+			
+			this._boundOnTimeIndexChange = this.onPlayerTimeIndexChange.subscribeTo(KONtx.mediaplayer, "onTimeIndexChanged", this);
+			
+		}
+		
+	},
+    //
+	unbindTimeIndexChange: function () {
+		
+		if (this._boundOnTimeIndexChange) {
+			
+			this._boundOnTimeIndexChange.unsubscribeFrom(KONtx.mediaplayer, "onTimeIndexChanged", this);
+			
+			this._boundOnTimeIndexChange = null;
+			
+		}
+		
+	},
+	//
+	//-- renderer ------------------------------------------------------------------------------------------------------
+	//
+	processEntries: function (currentInterval) {
+		
+		var addEntriesResponse = null;
+		
+		var regionsActive = this.state.regionsActive;
+		
+		var nextInterval = this.state.nextInterval;
+		
+		var nextCaptionIndex = this.state.nextCaptionIndex;
+		
+common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChange[" + currentInterval + "]", "currentInterval:" + currentInterval, "nextInterval:" + nextInterval, "nextCaptionIndex:" + nextCaptionIndex, "regionsActive:" + (regionsActive.length ? regionsActive.toString() : "none"));
+		
+		// do we have open regions to check for removal
+		if (regionsActive.length) {
+			
+			this.removeEntries(currentInterval);
+			
+		}
+		
+		// check if we have a previously recorded interval to start at or if
+		// not then we must assume this is our first loop
+		if ((nextInterval == currentInterval) || (nextInterval < currentInterval) || (nextInterval == 0)) {
+			
+			// is our next check point behind the current interval
+			if (currentInterval > nextInterval) {
+				
+common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChange[" + currentInterval + "]", "the sequencer got off track", "currentInterval:" + currentInterval, "nextInterval:" + nextInterval);
+				
+			}
+			
+			this.addEntries(currentInterval);
+			
+		}
+		
+	},
+	//
+	addEntries: function (currentInterval) {
+		
+		var captionIndex = 0;
+		
+		var captionEntry = null;
+		
+		var captionsBody = this.data.body;
+		
+		var regionNode = null;
+		
+		var regionNodes = this.regions;
+		
+		var regionsActive = this.state.regionsActive;
+		
+		var nextInterval = this.state.nextInterval;
+		
+		var nextCaptionIndex = this.state.nextCaptionIndex;
+		
+		// start looking at entries based on the last recorded index of
+		// the previous loop which was ahead of that last loops current
+		// interval
+		for (captionIndex = nextCaptionIndex; captionIndex < captionsBody.length; captionIndex++) {
+			
+			captionEntry = captionsBody[captionIndex];
+			
+			// skip items that have matching start and end times
+			// this will happen for us in cases were single words are displayed for less than 1 second
+			// since we cannot insure accuracy below 1000ms we cannot currently handle these entries
+			if (captionEntry.begin == captionEntry.end) {
+				
+				// if the end time is the same...
+				// we could add 1 second to the end time and stick on the node
+				// if we do this we introduce the possibility of buffer overflow on the node to counter this we would
+				// need to scroll content, ahhhh
+				continue;
+				
+			}
+			
+			// if time of entry is at the current interval then add the region
+			if (captionEntry.begin == currentInterval) {
+				
+				regionNode = this.createEntryNode(regionNodes, captionEntry);
+				
+				this.applyEntryStyles(regionNode, captionEntry);
+				
+				this.applyEntryText(regionNode, captionEntry);
+				
+				regionNode.visible = true;
+				
+				regionsActive.push(captionIndex);
+				
+			}
+			
+			// if time of entry is ahead of current interval then queue the entry for the next loop
+			if (captionEntry.begin > currentInterval) {
+				
+				nextInterval = captionEntry.begin;
+				
+				nextCaptionIndex = captionIndex;
+				
+				break;
+				
+			}
+			
+		}
+		
+		this.state.nextInterval = nextInterval;
+		
+		this.state.nextCaptionIndex = nextCaptionIndex;
+		
+		this.state.regionsActive = regionsActive;
+		
+	},
+	//
+	removeEntries: function (currentInterval) {
+		
+		var index = 0;
+		
+		var captionIndex = 0;
+		
+		var captionEntry = null;
+		
+		var captionsBody = this.data.body;
+		
+		var regionNodes = this.regions;
+		
+		var regionsActive = this.state.regionsActive;
+		
+		var regionsStillActive = [];
+		
+		if (common.debug.level[5]) {
+			
+			for (index = 0; index < regionsActive.length; index++) {
+				
+				captionIndex = regionsActive[index];
+				
+				captionEntry = captionsBody[captionIndex];
+				
+common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChange[" + currentInterval + "]", "OPEN   -> region:" + captionEntry.region, "index:" + captionIndex, "time:(b):" + captionEntry.begin + ",(e)" + captionEntry.end, "content:" + captionEntry.content);
+				
+			}
+			
+		}
+		
+		// start looking at any recorded open regions to see if they
+		// need removed based on their specified end time
+		for (index = 0; index < regionsActive.length; index++) {
+			
+			captionIndex = regionsActive[index];
+			
+			captionEntry = captionsBody[captionIndex];
+			
+			// if time of entry is at or ahead of the current interval
+			// then remove the region
+			if (captionEntry.end <= currentInterval) {
+				
+common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChange[" + currentInterval + "]", "REMOVE -> region:" + captionEntry.region, "index:" + captionIndex, "time:(b):" + captionEntry.begin + ",(e)" + captionEntry.end, "content:" + captionEntry.content);
+				
+				regionNodes[captionEntry.region].visible = false;
+				
+			} else {
+				
+				regionsStillActive.push(captionIndex);
+				
+			}
+			
+		}
+		
+		this.state.regionsActive = regionsStillActive;
+		
+	},
+	//
+	createEntryNode: function (regionNodes, captionEntry) {
+common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChange[" + currentInterval + "]", "ADD    -> region:" + captionEntry.region, "index:" + captionIndex, "time:(b):" + captionEntry.begin + ",(e)" + captionEntry.end, "content:" + (captionEntry.content || (captionEntry.span && captionEntry.span.content) || "EMPTY"));
+		
+		var parentElement = this.element;
+		
+		var regionNode = regionNodes[captionEntry.region];
+		
+		if (regionNode) {
+			
+			// clear out latent styles that may be lingering from previous use of the node
+			regionNode.setStyle("", true);
+			
+			// e=$("CaptionsOverlay-79.element").element.childNodes.item(0)
+			// e.removeEffect(0)
+			if (regionNode.effect) {
+				
+				regionNode.removeEffect(regionNode.effect);
+				
+			}
+			
+		} else {
+			
+common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChange", "creating region", captionEntry.region);
+			
+			// create node
+			regionNode = new Text();
+			
+			// add node to parent container
+			parentElement.appendChild(regionNode);
+			
+			// add pointer to local stack
+			regionNodes[captionEntry.region] = regionNode;
+			
+		}
+		
+		return regionNode;
+		
+	},
+	//
+	applyEntryStyles: function (regionNode, captionEntry) {
+common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChange", "entry styles", common.dump(captionEntry.styles));
+		
+		if ("styles" in captionEntry) {
+			
+			regionNode.setStyle(captionEntry.styles, true);
+			
+			// we do not support text-outline properties but we do support the outline
+			// since the css standard contradicts what the ttml standard states we will default to a black 1px outline
+			if ("textOutline" in captionEntry.styles) {
+				
+				regionNode.effect = new Glow(0, 0, 1, 'black', 100);
+				
+				regionNode.applyEffect(regionNode.effect);
+				
+			}
+			
+		}
+		
+	},
+	//
+	applyEntryText: function (regionNode, captionEntry) {
+common.debug.level[5] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChange", "captionEntry", common.dump(captionEntry));
+		
+		if ("content" in captionEntry) {
+			
+			regionNode.text = captionEntry.content;
+			
+		}
+		
+	},
+	//
+	//-- message handlers ----------------------------------------------------------------------------------------------
+    //
+	// fired when this control is appended to the dom
     onAppended: function (event) {
         
         this.onDeactivate.subscribeTo(this.getView(), "onHideView", this);
-        
+		
     },
     // fired when the CC button is selected on the transport control
     onActivate: function (event) {
@@ -602,83 +941,40 @@ common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onActivate", common.du
 		
 		var activeInput = null;
 		
-		if (!this._boundControlStop) {
-			
-			this._boundControlStop = this.onControlStop.subscribeTo(KONtx.mediaplayer, "onControlStop", this);
-			
-		}
+		this.bindControlStop();
 		
-		if (!this._boundOnStateChange) {
-			
-			this._boundOnStateChange = this.onPlayerStateChange.subscribeTo(KONtx.mediaplayer, "onStateChange", this);
-			
-		}
+		this.bindStateChange();
 		
-		if (!this._boundOnTimeIndexChange) {
-			
-			this._boundOnTimeIndexChange = this.onPlayerTimeIndexChange.subscribeTo(KONtx.mediaplayer, "onTimeIndexChanged", this);
-			
-		}
+		this.bindTimeIndexChange();
 		
-common.debug.level[2] && KONtx.cc.log("CaptionsOverlay", "onActivate", "cleaning up state object");
+common.debug.level[2] && KONtx.cc.log("CaptionsOverlay", "onActivate", "clearing state");
 		this.state = common.clone(this.config.state);
 		
+		// check to see if we came back to the same url
 		if (activeUrl != this.data.id) {
-common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "data ids don't match, resetting");
+common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "clearing data (ids don't match)");
+common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "   old id: " + this.data.id);
+common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "   new id: " + activeUrl);
 			
+			// get a fresh copy of the data object
 			this.data = common.clone(this.config.data);
 			
+			// assign an id for tracking
 			this.data.id = activeUrl;
 			
+			// populate any captions that exist in the current entry of the mediaplayer
 			this.data.captions = KONtx.mediaplayer.playlist.currentEntry.getCaptions();
 			
-			var entry = this.data.captions.getDefaultEntry();
-			
-			if (this.data.captions) {
+		}
+		
+		if (this.data.captions) {
 common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "found captions");
 common.debug.level[5] && KONtx.cc.log(common.dump(this.data.captions));
-				
-				if (KONtx.cc.useHardware()) {
-common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "onActivate", "sending activate message to firmware");
-					
-					activeInput = KONtx.cc.getActiveInput();
-					
-					activeInput.cc = true;
-					
-					if (!this.state.dataDelivered) {
-						
-						activeInput.setClosedCaptionUrls([entry.url]);
-						
-					}
-					
-					this.state.dataDelivered = true;
-					
-				} else {
-					
-					var parser = this.data.captions.parser;
-					
-					if (entry.parser && (common.typeOf(entry.parser) == "function")) {
-						
-						parser = entry.parser;
-						
-					}
-					
-					this.data.fulfilled = false;
-					
-					parser(entry.url, common.bind(function (result) {
-						
-						this.fire("onDataReceived", result);
-						
-						this.data.fulfilled = true;
-						
-					}, this));
-					
-				}
-				
-			} else {
-common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "this.data.captions", "no captions found");
-				
-			}
+			
+			this[KONtx.cc.useHardware ? "setHardwareState" : "setSoftwareState"](true);
+			
+		} else {
+common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "no captions found");
 			
 		}
 		
@@ -687,57 +983,14 @@ common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "this.dat
     onDeactivate: function (event) {
 common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "onDeactivate");
         
-		this.data = {};
+		this[KONtx.cc.useHardware ? "setHardwareState" : "setSoftwareState"](false);
 		
-		var activeInput = null;
+		this.unbindTimeIndexChange();
 		
-		if (KONtx.cc.useHardware()) {
-common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "onDeactivate", "sending deactivate message to firmware");
-			
-			activeInput = KONtx.cc.getActiveInput();
-			
-			activeInput.cc = false;
-			
-		} else {
-			
-			var regions = this.regions;
-			
-			var index = null;
-			
-			for (index in regions) {
-				
-				regions[index].visible = false;
-				
-common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onDeactivate", "region", index);
-				
-			}
-			
-		}
+		this.unbindStateChange();
 		
-		if (this._boundOnTimeIndexChange) {
-			
-			this._boundOnTimeIndexChange.unsubscribeFrom(KONtx.mediaplayer, "onTimeIndexChanged", this);
-			
-			this._boundOnTimeIndexChange = null;
-			
-		}
+		this.unbindControlStop();
 		
-        if (this._boundControlStop) {
-            
-            this._boundControlStop.unsubscribeFrom(KONtx.mediaplayer, "onControlStop", this);
-            
-            this._boundControlStop = null;
-            
-        }
-        
-        if (this._boundOnStateChange) {
-            
-            this._boundOnStateChange.unsubscribeFrom(KONtx.mediaplayer, "onStateChange", this);
-            
-            this._boundOnStateChange = null;
-            
-        }
-        
     },
     // this routine further normalizes the incoming data so we have a standard payload for the renderer to work with
     onDataReceived: function (event) {
@@ -753,8 +1006,38 @@ common.debug.level[3] && KONtx.cc.log("onDataReceived","event",common.dump(event
             
             this.data.body = this.processBody(data);
             
+			// if we have entries then we have fulfilled our data requirements
+			// this is used in the timeindexchange handler to determine if we should process anything
+			this.data.fulfilled = this.data.body.length ? true : false;
+			
 common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onDataReceived", common.dump(this.data,5));
             
+        }
+        
+    },
+    // fired when the state of the mediaplayer changes
+    onPlayerStateChange: function (event) {
+        
+        var playerStates = KONtx.cc.playerStates;
+        
+        switch (event.payload.newState) {
+            
+			case playerStates.BUFFERING:
+			case playerStates.PLAY:
+common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onPlayerStateChange", KONtx.cc.playerStatesLegend[event.payload.newState]);
+				
+				this.fire("onPlayerTimeIndexChange");
+				
+				break;
+				
+            case playerStates.STOP:
+common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onPlayerStateChange", KONtx.cc.playerStatesLegend[event.payload.newState]);                
+common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onPlayerStateChange", "stopping video");
+                
+                this.fire("onDeactivate");
+                
+                break;
+                
         }
         
     },
@@ -766,277 +1049,33 @@ common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onControlStop", common
         this.fire("onDeactivate");
         
     },
-    // fired when the state of the mediaplayer changes
-    onPlayerStateChange: function (event) {
-        
-        var playerStates = KONtx.cc.getPlayerStates();
-        
-common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onPlayerStateChange", KONtx.cc.playerStatesLegend[event.payload.newState]);
-        
-        switch (event.payload.newState) {
-            
-            case playerStates.STOP:
-                
-common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onPlayerStateChange", "stopping video");
-                
-				this.state.playerActive = false;
-				
-                this.fire("onDeactivate");
-                
-                break;
-                
-        }
-        
-    },
     // fired when the time index of the mediaplayer changes
     onPlayerTimeIndexChange: function (event) {
-common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChange");
 		
-        if (this.data.fulfilled && this.data.body.length) {
-            
-            var index = 0;
-            
-            var captionIndex = 0;
-            
-            var nextCaptionIndex = this.state.nextCaptionIndex;
-            
-            var currentInterval = event.payload.timeIndex;
-            
-            var nextInterval = this.state.nextInterval;
-            
-            var parentElement = this.element;
-            
-            var captionEntry = null;
-            
-            var captionsBody = this.data.body;
-            
-            var regionNode = null;
-            
-            var regionNodes = this.regions;
-            
-            var regionModel = {};
-            
-            var regionModels = null;
-            
-            // defaults applied to containing frame
-            this.element.style.fontSize = this.config.fontSize;
-            this.element.style.color = "#FFF";
-            
-            regionModels = this.data.head.layout.region;
-            
-            var regionsActive = this.state.regionsActive;
-            
-            var regionsStillActive = [];
-            
-common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChange[" + currentInterval + "]", "currentInterval:" + currentInterval, "nextInterval:" + nextInterval, "nextCaptionIndex:" + nextCaptionIndex, "regionsActive:" + (regionsActive.length ? regionsActive.toString() : "none"));
-            
-            // do we have open regions to check for removal
-            if (regionsActive.length) {
-                
-                if (common.debug.level[5]) {
-                    
-                    for (index = 0; index < regionsActive.length; index++) {
-                        
-                        captionIndex = regionsActive[index];
-                        
-                        captionEntry = captionsBody[captionIndex];
-                        
-KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChange[" + currentInterval + "]", "OPEN   -> region:" + captionEntry.region, "index:" + captionIndex, "time:(b):" + captionEntry.begin + ",(e)" + captionEntry.end, "content:" + captionEntry.content);
-                        
-                    }
-                    
-                }
-                
-                // start looking at any recorded open regions to see if they
-                // need removed based on their specified end time
-                for (index = 0; index < regionsActive.length; index++) {
-                    
-                    captionIndex = regionsActive[index];
-                    
-                    captionEntry = captionsBody[captionIndex];
-                    
-                    // if time of entry is at or ahead of the current interval
-                    // then remove the region
-                    if (captionEntry.end <= currentInterval) {
-                        
-common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChange[" + currentInterval + "]", "REMOVE -> region:" + captionEntry.region, "index:" + captionIndex, "time:(b):" + captionEntry.begin + ",(e)" + captionEntry.end, "content:" + captionEntry.content);
-                        
-                        regionNodes[captionEntry.region].visible = false;
-                        
-                    } else {
-                        
-                        regionsStillActive.push(captionIndex);
-                        
-                    }
-                    
-                }
-                
-                regionsActive = regionsStillActive;
-                
-            }
-            
-            // check if we have a previously recorded interval to start at or if
-            // not then we must assume this is our first loop
-            if ((nextInterval == currentInterval) || (nextInterval < currentInterval) || (nextInterval == 0)) {
-                
-                // is our next check point behind the current interval
-                if (currentInterval > nextInterval) {
-                    
-common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChange[" + currentInterval + "]", "the sequencer got off track", "currentInterval:" + currentInterval, "nextInterval:" + nextInterval);
-                    
-                }
-                
-                // start looking at entries based on the last recorded index of
-                // the previous loop which was ahead of that last loops current
-                // interval
-                for (captionIndex = nextCaptionIndex; captionIndex < captionsBody.length; captionIndex++) {
-                    
-                    captionEntry = captionsBody[captionIndex];
-                    
-                    // skip items that have matching start and end times
-                    // this will happen for us in cases were single words are displayed for less than 1 second
-                    // since we cannot insure accuracy below 1000ms we cannot currently handle these entries
-                    if (captionEntry.begin == captionEntry.end) {
-                        
-                        // if the end time is the same...
-                        // we could add 1 second to the end time and stick on the node
-                        // if we do this we introduce the possibility of buffer overflow on the node
-                        // to counter this we would need to scroll content, ahhhh
-                        continue;
-                        
-                    }
-                    
-                    // if time of entry is at the current interval then add the
-                    // region
-                    if (captionEntry.begin == currentInterval) {
-                        
-common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChange[" + currentInterval + "]", "ADD    -> region:" + captionEntry.region, "index:" + captionIndex, "time:(b):" + captionEntry.begin + ",(e)" + captionEntry.end, "content:" + (captionEntry.content || (captionEntry.span && captionEntry.span.content) || "EMPTY"));
-                        
-                        regionNode = regionNodes[captionEntry.region];
-                        
-                        if (regionNode) {
-                            
-                            // clear out latent styles that may be lingering from previous use of the node
-                            regionNode.setStyle("", true);
-                            
-                            // e=$("CaptionsOverlay-79.element").element.childNodes.item(0)
-                            // e.removeEffect(0)
-                            if (regionNode.effect) {
-                                log("effect found");
-                                regionNode.removeEffect(regionNode.effect);
-                                
-                            }
-                            
-                        } else {
-                            
-common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChange", "creating region", captionEntry.region);
-                            
-                            // create node
-                            regionNode = new Text();
-                            
-                            // add node to parent container
-                            parentElement.appendChild(regionNode);
-                            
-                            // add pointer to local stack
-                            regionNodes[captionEntry.region] = regionNode;
-                            
-                        }
-                        
-common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChange", "entry styles", common.dump(captionEntry.styles));
-                        
-                        if ("styles" in captionEntry) {
-                            
-                            regionNode.setStyle(captionEntry.styles, true);
-                            
-                            // we do not support text-outline properties but we do support the outline
-                            // since the css standard contradicts what the ttml standard states we will default to a black 1px outline
-                            if ("textOutline" in captionEntry.styles) {
-                                
-                                regionNode.effect = new Glow(0, 0, 1, 'black', 100);
-                                
-                                regionNode.applyEffect(regionNode.effect);
-                                
-                            }
-                            
-                        }
-                        
-common.debug.level[5] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChange", "captionEntry", common.dump(captionEntry));
-                        if ("content" in captionEntry) {
-                            
-                            regionNode.text = captionEntry.content;
-                            
-                        }
-                        
-                        // break this down
-                        // TODO: we don't want to support this
-                        // ??? right ???
-                        if ("span" in captionEntry) {
-                            
-                            regionNode.setStyle(captionEntry.span, true);
-                            
-                            var captionEntrySpanType = common.typeOf(captionEntry.span);
-                            
-common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChange", "captionEntrySpanType", captionEntrySpanType);
-                            
-                            switch (captionEntrySpanType) {
-                                
-                                case "string":
-                                    
-                                    regionNode.text = captionEntry.span;
-                                    
-                                    break;
-                                
-                                case "array":
-                                    
-                                    regionNode.text = captionEntry.span.join("\n");
-                                    
-                                    break;
-                                
-                                case "object":
-                                    
-                                    if ("content" in captionEntry.span) {
-                                        
-                                        regionNode.text = captionEntry.span.content;
-                                        
-                                    }
-                                    
-                                    break;
-                                
-                            }
-                            
-                        }
-                        
-                        regionNode.visible = true;
-                        
-                        regionsActive.push(captionIndex);
-                        
-                    }
-                    
-                    // if time of entry is ahead of current interval then queue
-                    // the entry for the next loop
-                    if (captionEntry.begin > currentInterval) {
-                        
-                        nextInterval = captionEntry.begin;
-                        
-                        nextCaptionIndex = captionIndex;
-                        
-                        break;
-                        
-                    }
-                    
-                }
-                
-            }
-            
-            this.state.nextInterval = nextInterval;
-            
-            this.state.nextCaptionIndex = nextCaptionIndex;
-            
-            this.state.regionsActive = regionsActive;
-            
-        }
+		if (!this.useHardwareSet) {
+			
+			this.useHardwareSet = true;
+			
+			this.useHardware = KONtx.cc.useHardware ? true : false;
+			
+		}
+		
+		if (this.useHardware) {
+			
+			this.setHardwareState(true);
+			
+			this.unbindTimeIndexChange();
+			
+		} else {
+			
+			if (this.data.fulfilled) {
+				
+				this.processEntries(event.payload.timeIndex);
+				
+			}
+			
+		}
         
-    }
-    //
+    },
+	//
 });
-//

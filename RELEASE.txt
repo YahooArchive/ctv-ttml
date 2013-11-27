@@ -177,3 +177,24 @@
 	fixed bug where button was being forcefully deactivated on re-entry to a media playback view
 	made sure parsing routine is being executed only after a playlist activation
 	
+0.0.28
+	changed KONtx.cc.getPlayerStates() from function to KONtx.cc.playerStates getter
+	changed KONtx.cc.getPlayerState() from function to KONtx.cc.playerState getter
+	added KONtx.cc.playerActive getter which returns true if the mediaplayer is in PLAY, PAUSE, FORWARD, REWIND, or BUFFERING states
+	changed KONtx.cc.useHardware() from function to KONtx.cc.useHardware getter
+	added KONtx.cc.engineInterface getter
+	added listener for hardware activate/deactivate to allow our UI to be notified when a system level change happens(or from the remote control)
+		* this feature is dependant on SOC implementation and a new Konfabulator SDK but the client is ready now
+	changed the order in which the hardware support notifies the hardware of ttml data
+		now waits until after a mediaplayer play event happens
+	numerous performance enhancements
+	now caching engine API calls for certain things so we don't have to requery during each loop iteration
+	added support for v1 and v2 engine APIs for closed captioning
+	removed software logic for flattening the paragraph nodes from ttml since we are now relying on the cloud parser to do this
+	
+0.0.29
+	fixed bug with cached interface related to activeInput
+	
+0.1.0
+	removed old engineInterface logic which was there for the first revision of hardware support
+	

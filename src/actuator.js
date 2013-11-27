@@ -45,32 +45,35 @@ KONtx.cc = (function kontx_cc_singleton() {
 	//
 	/******************************************************************************************************************/
 	//
-	var rendererType = "";
-	//
-	var languageStorageKey = "captionsLanguage";
-	//
-	var activatedStorageKey = "captionsActivated";
+	var DEBUG = _production ? false : true;
+	// set to true to force the simulator to fake hardware support
+	var DEBUG_HARDWARE_SWITCH = DEBUG && false;
+	// set this to true to test the engine callback for cc state change
+	var DEBUG_HARDWARE_STATUS_CHANGED_HANDLER = DEBUG && DEBUG_HARDWARE_SWITCH && false;
 	//
 	var instance = {
 		//
 		name: "CC",
 		//
-		version: "0.0.26",
+		version: "0.1.0",
 		//
 		log: common.debug.log,
 		//
 		toString: common.toString,
 		//
 		config: {
-            // this is a constant that we need to keep track of because it is not exposed by the engine
-			// it is currently handing off the TVInput class
-			SUPPORT_CC: 2,
             // default language
             defaultLanguage: "en",
+			//
+			languageStorageKey: "captionsLanguage",
+			//
+			activatedStorageKey: "captionsActivated",
             // used to determine if the module is being loaded locally from an app or globally from the framework
 			modulePath: KONtx.config.ccModulePath,
             // location of module images
 			assetPath: KONtx.config.ccModulePath + "assets/" + (screen.width + "x" + screen.height) + "/",
+			//
+			rendererType: "auto",
 			// these values determine if the hardware fork for the renderer is used or not
 			rendererTypes: ["auto", "yahoo"],
 			// the default renderer path
@@ -107,6 +110,11 @@ KONtx.cc = (function kontx_cc_singleton() {
 			//
 		},
         //
+		state: {
+			engineInterface: false,
+			useHardware: false,
+		},
+		//
         playerStatesLegend: (function () {
             
             var result = {};
@@ -128,15 +136,17 @@ KONtx.cc = (function kontx_cc_singleton() {
             return result;
             
         })(),
-        //
+		//
+		playerStates: KONtx.mediaplayer.constants.states,
+		//
         /**************************************************************************************************************/
         //
 		get renderer() {
 			
-			var type = rendererType;
+			var type = this.config.rendererType;
 			
 			// check for SDK/ADK/WDK builds and force "yahoo"
-			if (platform.build.type == "sim") {
+			if ((platform.build.type == "sim") && !DEBUG_HARDWARE_SWITCH) {
 				
 				type = this.config.rendererTypes[1];
 				
@@ -150,51 +160,13 @@ common.debug.level[2] && this.log("renderer", "detected build type \"" + platfor
 		//
 		set renderer(type) {
 			
-			rendererType = (type && (this.config.rendererTypes.indexOf(type) != -1)) ? type : this.config.rendererTypes[this.config.rendererDefaultIndex];
-			
-		},
-		//
-		useHardware: function () {
-			
-			var hardwareSupportAvailable = false;
-			
-			var activeInput = this.getActiveInput();
-			
-			if (activeInput) {
-				
-				if ("doesSupport" in activeInput) {
-					
-					hardwareSupportAvailable = activeInput.doesSupport(this.config.SUPPORT_CC);
-					
-				}
-				
-			}
-common.debug.level[3] && this.log("CaptionsOverlay", "useHardware", "hardwareSupportAvailable", String(hardwareSupportAvailable));
-			
-			var useHardwareRenderer = (this.renderer == "auto") ? true : false;
-common.debug.level[3] && this.log("CaptionsOverlay", "useHardware", "useHardwareRenderer", String(useHardwareRenderer));
-			
-			if (hardwareSupportAvailable && useHardwareRenderer) {
-				
-				return true;
-				
-			} else {
-				
-				return false;
-				
-			}
-			
-		},
-		//
-		getActiveInput: function () {
-			
-			return KONtx.mediaplayer.tvapi.activeInput;
+			this.config.rendererType = (type && (this.config.rendererTypes.indexOf(type) != -1)) ? type : this.config.rendererTypes[this.config.rendererDefaultIndex];
 			
 		},
 		// 
         get enabled() {
             
-            var state = Boolean(Number(currentProfileData.get(activatedStorageKey)));
+            var state = Boolean(Number(currentProfileData.get(this.config.activatedStorageKey)));
             
 //common.debug.level[3] && this.log("enabled", "getting cc button activation state: " + state);
             
@@ -208,7 +180,7 @@ common.debug.level[3] && this.log("CaptionsOverlay", "useHardware", "useHardware
             
 //common.debug.level[3] && this.log("enabled", "setting cc button activation state: " + state);
             
-            currentProfileData.set(activatedStorageKey, state);
+            currentProfileData.set(this.config.activatedStorageKey, state);
             
         },
         //
@@ -216,7 +188,7 @@ common.debug.level[3] && this.log("CaptionsOverlay", "useHardware", "useHardware
         //
         getLanguage: function () {
             
-            var lang = currentProfileData.get(languageStorageKey);
+            var lang = currentProfileData.get(this.config.languageStorageKey);
             
 common.debug.level[0] && this.log("getLanguage", "getting profile selected captions language: " + lang);
             
@@ -238,26 +210,84 @@ common.debug.level[0] && this.log("getLanguage", "no captions language found, sa
             
 common.debug.level[0] && this.log("setLanguage", "setting profile selected captions language: " + lang);
             
-            currentProfileData.set(languageStorageKey, lang);
+            currentProfileData.set(this.config.languageStorageKey, lang);
             
         },
         // 
-        getPlayerState: function () {
+        get playerState() {
             
-            var playerTVAPI = KONtx.mediaplayer.tvapi;
-            
-            return playerTVAPI.currentPlayerStatus ? playerTVAPI.currentPlayerStatus : playerTVAPI.currentPlayerState;
+            return KONtx.mediaplayer.tvapi.currentPlayerState;
             
         },
         //
-        getPlayerStates: function () {
-            
-            return KONtx.mediaplayer.constants.states;
-            
-        },
-		/**
-         * @description fetches JSON formatted XML via YQL
-         */
+		get playerActive() {
+			
+			var activeStates = [
+				this.playerStates.PLAY,
+				this.playerStates.PAUSE,
+				this.playerStates.FORWARD,
+				this.playerStates.REWIND,
+				this.playerStates.BUFFERING,
+			];
+			
+			var active = (activeStates.indexOf(this.playerState) != -1) ? true : false;
+common.debug.level[3] && this.log("playerActive", active);
+			
+			return active;
+		},
+		//
+		get useHardware() {
+			
+			var useHardware = this.state.useHardware;
+			
+			if (!useHardware) {
+				
+				var hardwareSupportAvailable = false;
+				
+				var engineInterface = this.engineInterface;
+				
+				if (engineInterface) {
+					
+					hardwareSupportAvailable = true;
+					
+				}
+common.debug.level[3] && this.log("useHardware", "hardwareSupportAvailable", String(hardwareSupportAvailable));
+				
+				var useHardwareRenderer = (this.renderer == "auto") ? true : false;
+common.debug.level[3] && this.log("useHardware", "useHardwareRenderer", String(useHardwareRenderer));
+				
+				useHardware = (hardwareSupportAvailable && useHardwareRenderer) ? true : false;
+				
+				this.state.useHardware = useHardware;
+				
+			}
+			
+			return useHardware;
+		},
+		//
+		get engineInterface() {
+			
+			var engineInterface = this.state.engineInterface;
+			
+			if (!engineInterface) {
+				
+				if (typeof(tv) !== "undefined") {
+					
+					if ((typeof(tv.cc) !== "undefined") && (tv.cc != null)) {
+						
+						engineInterface = tv.cc;
+						
+						this.state.engineInterface = engineInterface;
+						
+					}
+					
+				}
+				
+			}
+			
+			return engineInterface;
+		},
+		//
         fetch: function (config) {
             
             var xhr;
@@ -322,9 +352,20 @@ common.debug.level[0] && this.log("setLanguage", "setting profile selected capti
 		//
 	};
 	//
-	/******************************************************************************************************************/
-	// set default renderer path based on a global
-	instance.renderer = KONtx.config.ccRendererType;
+	if (DEBUG_HARDWARE_STATUS_CHANGED_HANDLER) {
+		
+		log("STARTING TEST TIMER");
+		this.t = new Timer();
+		this.t.onTimerFired = function () {
+			log("EXECUTING TEST TIMER");
+			if (instance.useHardware) {
+				tv.cc.onStateChanged();
+			}
+		}
+		this.t.interval = 5;
+		this.t.ticking = true;
+		
+	}
 	//
 	return instance;
 	// 
