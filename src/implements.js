@@ -223,6 +223,49 @@ KONtx.control.MediaTransportOverlay.implement({
 		
 		switch (event.type) {
 			
+			case "onUpdateView":
+				
+				var button = this._controls.captionsbutton;
+				
+				if (KONtx.cc.enabled) {
+					
+					if (button) {
+						
+						var playlistEntry = KONtx.mediaplayer.playlist.currentEntry;
+						
+						if (playlistEntry) {
+							
+							var captions = KONtx.mediaplayer.playlist.currentEntry.getCaptions();
+							
+							if (captions) {
+								
+								if (KONtx.cc.enabled) {
+									
+									button.fire("onActivate", {
+										captions: captions,
+										lang: KONtx.cc.getLanguage(),
+									});
+									
+								}
+								
+							}
+							
+						}
+						
+					}
+					
+				} else {
+					
+					if (button) {
+						
+						button.fire("onDeactivate");
+						
+					}
+					
+				}
+				
+				break;
+				
 			case "onHideView":
 				
 				this._unregisterHardwareChangeHandler();

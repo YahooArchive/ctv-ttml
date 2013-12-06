@@ -198,3 +198,5 @@
 0.1.0
 	removed old engineInterface logic which was there for the first revision of hardware support
 	
+0.1.1
+	fixed issue where returning from dock overlay would not re-enable captions
