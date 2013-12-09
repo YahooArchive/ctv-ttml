@@ -254,14 +254,6 @@ KONtx.control.MediaTransportOverlay.implement({
 						
 					}
 					
-				} else {
-					
-					if (button) {
-						
-						button.fire("onDeactivate");
-						
-					}
-					
 				}
 				
 				break;
@@ -344,12 +336,6 @@ common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "onSourceUpdated"
 						
 						button.setDisabled(true);
 						
-						if (KONtx.cc.enabled) {
-							
-							button.fire("onDeactivate");
-							
-						}
-                        
                     }
 					
                 }
@@ -456,7 +442,8 @@ common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "captionsbutton",
                     }
                     
                 },
-                onActivate: function onActivate(event) {
+                // this button press turns CC on
+				onActivate: function onActivate(event) {
 common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "captionsbutton", "onActivate");
                     
 					this.activated = true;
@@ -497,7 +484,8 @@ common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "captionsbutton",
 					}
                     
                 }, 
-                onDeactivate: function onDeactivate(event) {
+                // this button press turns CC off
+				onDeactivate: function onDeactivate(event) {
 common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "captionsbutton", "onDeactivate");
                     
                     this.activated = false;
@@ -511,6 +499,7 @@ common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "captionsbutton",
 						this.owner._overlay.captions.fire("onDeactivate");
 						
 					}
+					
                 },
                 onCaptionListRequest: function onCaptionListRequest(event) {
                     

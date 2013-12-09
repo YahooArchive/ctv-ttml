@@ -200,3 +200,7 @@
 	
 0.1.1
 	fixed issue where returning from dock overlay would not re-enable captions
+	
+0.1.2
+	fixed bug where CC was deactivated when going from view with valid CC media to invalid CC media and back to valid CC media
+	
