@@ -142,8 +142,10 @@ For reference; the below performs the same as the above.
     });
 
 ------------------------------------------------------------------------------------------------------------------------
-Using a custom parser (MAKE SURE TO TRY THE DEFAULT PARSER FIRST)
+Using a custom parser
 ------------------------------------------------------------------------------------------------------------------------
+__MAKE SURE TO TRY THE DEFAULT PARSER FIRST__
+
 Adding a custom parser can be very time consuming/frustrating. The default parser should work on most caption documents.
 This solution is only for content providers that supply non-standard caption documents.
 
