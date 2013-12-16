@@ -32,6 +32,16 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 *******************************************************************************/
+
+/***********************************************************************************************************************
+
+Testing widevine playlist entry support
+	KONtx.media.PlaylistEntry.prototype.initialize
+	p=new KONtx.media.WidevinePlaylistEntry()
+	KONtx.media.WidevinePlaylistEntry.prototype.initialize
+	s=p._streamsGetter()
+	
+***********************************************************************************************************************/
 // protect the framework playlist
 (function kontx_media_playlist_singleton_protector() {
     
@@ -158,7 +168,7 @@ common.debug.level[3] && KONtx.cc.log("PlaylistEntry config", common.dump(this.c
         
     },
     //
-    addURL: function (url, bitrate, captions) {
+	addURL: function (url, bitrate, captions) {
         
         captions = captions || null;
         
@@ -193,10 +203,47 @@ common.debug.level[3] && KONtx.cc.log("PlaylistEntry config", common.dump(this.c
     }
     //
 });
+// protect the framework widevinePlaylistEntry
+(function kontx_media_windevinePlaylistEntry_singleton_protector() {
+	
+    var widevinePlaylistEntry = KONtx.media.WidevinePlaylistEntry;
+    
+    if (!("__getter" in widevinePlaylistEntry)) {
+        
+        delete KONtx.media.WidevinePlaylistEntry;
+        
+        KONtx.media.__defineGetter__("WidevinePlaylistEntry", function () {
+            
+            return widevinePlaylistEntry;
+            
+        });
+        
+        KONtx.media.__defineSetter__("WidevinePlaylistEntry", function () {
+            
+common.fire("onWarning", {
+    name: "Attempted overload",
+    message: "someone is trying to overload the KONtx.media.WidevinePlaylistEntry object from within the CC module"
+});
+            
+        });
+        
+    }
+    
+})();
 //
-/*******************************************************************************
+KONtx.media.WidevinePlaylistEntry.implement({
+	//
+	_streamsGetter: function () {
+		
+		return [{url: this.url, bitrate: -1, captions: this.getCaptions()}];
+		
+	},
+	//
+});
+//
+/***********************************************************************************************************************
 
-*******************************************************************************/
+***********************************************************************************************************************/
 // 
 KONtx.control.MediaTransportOverlay.implement({
     //

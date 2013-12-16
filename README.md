@@ -71,7 +71,6 @@ A few changes will need made to your app to get captions integrated
 
     1. A "Captions" object will need added to each "PlaylistEntry" object
     2. A "CaptionsEntry" object will need added to each "Captions" object
-    3. TTML data may need formatted to meet a specific schema
 
 ------------------------------------------------------------------------------------------------------------------------    
 Wiring up the code - Method 1
@@ -106,52 +105,28 @@ Wiring up the code - Method 2
     });
 
 ------------------------------------------------------------------------------------------------------------------------
-Adjusting the renderer (software/hardware)
+Notes about the renderer (software/hardware)
 ------------------------------------------------------------------------------------------------------------------------
-Some device partners may provide support for hardware parsing/rendering. As an app developer you don't have to do anything to take
-advantage of this. In the CC module we perform the required detection and will automatically switch to the hardware when
-it is available.
+Some device partners may provide support for hardware parsing/rendering. As an app developer you don't have to do
+anything to take advantage of this. In the CC module we perform the required detection and will automatically switch to
+the hardware when it is available. Not all device partners support the hardware path at this time. In these cases the
+CC module will fall back to the software path automatically.
 
-This will not change the UI that the end user interacts with to enable/disable captions via the button
-provided in the mediaplayer's transport control.
+This will not change the UI that the end user interacts with to enable/disable captions via the button provided in the
+mediaplayer's transport control.
 
-If the CC module detects that it is being used in the Yahoo Connected TV Simulator it will force the use of the software parser/renderer to allow
-you to see if your implementation is working correctly.
-
-If you want to force the use of the software parser/renderer, regardless of hardware support, you can use the following
-code:
-
-	// explicit forced software renderer
-	
-	new KONtx.media.Captions({
-		renderer: "yahoo"
-	});
-
-Below are examples of the default implementation. Both of these examples do the same thing.
-
-	// explicit default
-	
-	new KONtx.media.Captions({
-		renderer: "auto"
-	});
-
-	// implicit default
-	
-	new KONtx.media.Captions();
-
-It should be noted that there is no way to force the hardware renderer. This is because not all device partners support the
-hardware path. If "auto" is chosen then Yahoo will detect the hardware support and, if available, use it, but if it is not
-available Yahoo will fall back to the software path automatically.
+If the CC module detects that it is being used in the Yahoo Connected TV Simulator it will force the use of the software
+parser/renderer to allow you to see if your implementation is working correctly.
 
 ------------------------------------------------------------------------------------------------------------------------
 Using the default parser
 ------------------------------------------------------------------------------------------------------------------------
-Test the default path first to see if your captions look alright.
+Test the default path first to see if your captions look alright. For the majority of content providers this path will
+work fine.
 
     new KONtx.media.Captions();
 
-
-The below performs the same as the above.
+For reference; the below performs the same as the above.
 
     new KONtx.media.Captions({
         parser: function (url, callback) {
@@ -167,11 +142,14 @@ The below performs the same as the above.
     });
 
 ------------------------------------------------------------------------------------------------------------------------
-Using a custom parser
+Using a custom parser (MAKE SURE TO TRY THE DEFAULT PARSER FIRST)
 ------------------------------------------------------------------------------------------------------------------------
-If your ttml doesn't appear correctly this probably means that the ttml document itself has come formatting that is not
-understood by our parser and/or renderer. In this case you will need to process the document to conform to the renderer
-scheme.
+Adding a custom parser can be very time consuming/frustrating. The default parser should work on most caption documents.
+This solution is only for content providers that supply non-standard caption documents.
+
+If your captions do not appear correctly this probably means that the caption document itself contains formatting that
+is not understood by our parser/renderer. In this case you will need to process the document to conform to the renderer
+schema.
 
 This platform cannot support nested paragraph content so we need to flatten the "paragraph" tags into single entry nodes
 that contain only string text. The first thought would be to convert the XML to JSON but simply doing this will cause us
@@ -211,6 +189,20 @@ The ODT can be tested using the YQL console by inserting your ttml location. All
 
 [http://developer.yahoo.com/yql/console/?q=select * from ctv.ttml.normalize where url='<TTML LOCATION>'&env=store://datatables.org/alltableswithkeys](http://developer.yahoo.com/yql/console/?q=select%20*%20from%20ctv.ttml.normalize%20where%20url%3D'%3CTTML%20LOCATION%3E'&env=store%3A%2F%2Fdatatables.org%2Falltableswithkeys)
 
+
+------------------------------------------------------------------------------------------------------------------------
+User customizations (see "Notes about the renderer" above)
+------------------------------------------------------------------------------------------------------------------------    
+We do not support the user customization of captions by means of a GUI supplied by our software based approach.
+
+There are two paths that our CC module handles for authors.
+	1. Some vendors(starting in 2014) will supply an API which allows us to forward the content providers caption data
+	through to the SOC. In this case the Yahoo CC module is just a bridge to handle passing the caption document to the
+	hardware and to provide the necessary UI button to enable/disable the captions in the transport control. The hardware
+	will be responsible for parsing the caption document, displaying the captions themselves, and providing any user
+	customization options. 
+	2.For vendors not supporting/supplying this option(devices manufactured prior to 2014) the Yahoo CC module performs
+	the parsing/rendering of captions via software. In this case we do not supply any options for user customization.
 
 ------------------------------------------------------------------------------------------------------------------------
 TTML Styling

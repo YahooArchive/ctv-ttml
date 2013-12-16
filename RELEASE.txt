@@ -210,4 +210,10 @@
 	changed the way the view life-cycles were being handled in the transport control. they were causing problems before depending on variants in client implementations
 		this also solves a bug on the Vizio platform with dock-overlay
 	added data verification when fetching normalized data from our cloud service
-	
+0.1.4
+	changed the optional debug tools to be getters instead of just properties so the debug level can be checked at execution time instead of during instance creation
+	added Widevine PlaylistEntry support
+	updated the documentation to clarify a few things
+		- user custumization
+		- default vs custom parser
+		- software vs hardware renderer
