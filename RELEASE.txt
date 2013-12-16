@@ -214,6 +214,6 @@
 	changed the optional debug tools to be getters instead of just properties so the debug level can be checked at execution time instead of during instance creation
 	added Widevine PlaylistEntry support
 	updated the documentation to clarify a few things
-		- user custumization
+		- user customization
 		- default vs custom parser
 		- software vs hardware renderer
