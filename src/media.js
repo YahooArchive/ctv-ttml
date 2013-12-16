@@ -44,12 +44,6 @@ KONtx.media.Captions = function constructor_Captions(config) {
     if (config) {
 common.debug.level[5] && common.debug.log("config", common.dump(config));
 		
-		if (config.renderer) {
-			// see constructor of KONtx.cc for available types
-			KONtx.cc.renderer = config.renderer;
-			
-		}
-		
         if (config.parser && (common.typeOf(config.parser) == "function")) {
             // must follow pattern defined in Captions.parser
             this.parser = config.parser;
@@ -146,6 +140,8 @@ KONtx.media.Captions.prototype = {
     parser: function (url, callback) {
 common.debug.level[3] && KONtx.cc.log("Captions", "parser", "default parser");
         url = (!_PRODUCTION && KONtx.cc.config.debug_ttmlLocation) ? KONtx.cc.config.debug_ttmlLocation : url;
+common.debug.level[2] && KONtx.cc.log("Captions", "parser", "url", url);
+		
         KONtx.cc.fetch({
             url: KONtx.cc.config.yqlHost + "?format=json&q=" + KONtx.cc.config.yqlQuery.replace("%1", url),
             success: function (xhr) {

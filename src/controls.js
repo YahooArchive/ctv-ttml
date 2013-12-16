@@ -97,9 +97,6 @@ KONtx.control.CaptionsOverlay = new KONtx.Class({
         
 		this.parent();
         
-        // events the framework wires up on this object
-        this.onAppended.subscribeTo(this, "onAppend", this);
-        
         // events we want to fire but are not wired up to this object
         this.onActivate.subscribeTo(this, "onActivate", this);
         
@@ -762,6 +759,7 @@ common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChang
 			// if time of entry is at the current interval then add the region
 			if (captionEntry.begin == currentInterval) {
 				
+common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "addEntries[" + currentInterval + "]", "ADD    -> region:" + captionEntry.region, "index:" + captionIndex, "time:(b):" + captionEntry.begin + ",(e)" + captionEntry.end, "content:" + (captionEntry.content || (captionEntry.span && captionEntry.span.content) || "EMPTY"));
 				regionNode = this.createEntryNode(regionNodes, captionEntry);
 				
 				this.applyEntryStyles(regionNode, captionEntry);
@@ -854,7 +852,6 @@ common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChang
 	},
 	//
 	createEntryNode: function (regionNodes, captionEntry) {
-common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChange[" + currentInterval + "]", "ADD    -> region:" + captionEntry.region, "index:" + captionIndex, "time:(b):" + captionEntry.begin + ",(e)" + captionEntry.end, "content:" + (captionEntry.content || (captionEntry.span && captionEntry.span.content) || "EMPTY"));
 		
 		var parentElement = this.element;
 		
@@ -875,7 +872,7 @@ common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChang
 			
 		} else {
 			
-common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChange", "creating region", captionEntry.region);
+common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "createEntryNode", "creating region", captionEntry.region);
 			
 			// create node
 			regionNode = new Text();
@@ -926,12 +923,6 @@ common.debug.level[5] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChang
 	//
 	//-- message handlers ----------------------------------------------------------------------------------------------
     //
-	// fired when this control is appended to the dom
-    onAppended: function (event) {
-        
-        this.onDeactivate.subscribeTo(this.getView(), "onHideView", this);
-		
-    },
     // fired when the CC button is selected on the transport control
     onActivate: function (event) {
 common.debug.level[2] && KONtx.cc.log("CaptionsOverlay", "onActivate");
@@ -996,20 +987,27 @@ common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "onDeactivate");
     onDataReceived: function (event) {
         
         if (event.type == "onDataReceived") {
-common.debug.level[3] && KONtx.cc.log("onDataReceived","event",common.dump(event.payload));
+common.debug.level[3] && KONtx.cc.log("onDataReceived", "event", common.dump(event.payload));
             
-            var data = event.payload.tt;
-            
-            this.data.config = this.processConfig(data);
-            
-            this.data.head = this.processHead(data);
-            
-            this.data.body = this.processBody(data);
-            
-			// if we have entries then we have fulfilled our data requirements
-			// this is used in the timeindexchange handler to determine if we should process anything
-			this.data.fulfilled = this.data.body.length ? true : false;
-			
+			if (("payload" in event) && ("tt" in event.payload)) {
+				
+				var data = event.payload.tt;
+				
+				this.data.config = this.processConfig(data);
+				
+				this.data.head = this.processHead(data);
+				
+				this.data.body = this.processBody(data);
+				
+				// if we have entries then we have fulfilled our data requirements
+				// this is used in the timeindexchange handler to determine if we should process anything
+				this.data.fulfilled = this.data.body.length ? true : false;
+				
+			} else {
+				
+				this.data.fulfilled = false;
+				
+			}
 common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onDataReceived", common.dump(this.data,5));
             
         }
@@ -1026,6 +1024,7 @@ common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onDataReceived", commo
 			case playerStates.PLAY:
 common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onPlayerStateChange", KONtx.cc.playerStatesLegend[event.payload.newState]);
 				
+				// trigger this once, there is a check in the handler to remove the listener for the index change
 				this.fire("onPlayerTimeIndexChange");
 				
 				break;
@@ -1044,7 +1043,6 @@ common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onPlayerStateChange", 
     // fired when the stop button is selected on the transport control
     onControlStop: function (event) {
 common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "onControlStop");
-common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onControlStop", common.dump(event,3));
         
         this.fire("onDeactivate");
         
@@ -1052,15 +1050,7 @@ common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onControlStop", common
     // fired when the time index of the mediaplayer changes
     onPlayerTimeIndexChange: function (event) {
 		
-		if (!this.useHardwareSet) {
-			
-			this.useHardwareSet = true;
-			
-			this.useHardware = KONtx.cc.useHardware ? true : false;
-			
-		}
-		
-		if (this.useHardware) {
+		if (KONtx.cc.useHardware) {
 			
 			this.setHardwareState(true);
 			

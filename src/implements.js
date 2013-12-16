@@ -215,73 +215,59 @@ KONtx.control.MediaTransportOverlay.implement({
             activeSrc: common.manifest.get("cc-asset-button-caption-active").file
         });
         
+		this._onAppendedCC.subscribeTo(this, "onAppend", this);
+		
     },
-    //
-	_viewEventHandler: function (event) {
+	//
+	_onAppendedCC: function () {
+common.debug.level[1] && KONtx.cc.log("_onAppendedCC");
 		
-		this.parent(event);
+		this._registerViewHandlersCC();
 		
-		switch (event.type) {
+	},
+	//
+	_registerViewHandlersCC: function () {
+common.debug.level[1] && KONtx.cc.log("_registerViewHandlersCC");
+		
+		if (!this._boundViewHandlerCC) {
 			
-			case "onUpdateView":
-				
-				var button = this._controls.captionsbutton;
-				
-				if (KONtx.cc.enabled) {
-					
-					if (button) {
-						
-						var playlistEntry = KONtx.mediaplayer.playlist.currentEntry;
-						
-						if (playlistEntry) {
-							
-							var captions = KONtx.mediaplayer.playlist.currentEntry.getCaptions();
-							
-							if (captions) {
-								
-								if (KONtx.cc.enabled) {
-									
-									button.fire("onActivate", {
-										captions: captions,
-										lang: KONtx.cc.getLanguage(),
-									});
-									
-								}
-								
-							}
-							
-						}
-						
-					}
-					
-				}
-				
-				break;
-				
-			case "onHideView":
-				
-				this._unregisterHardwareChangeHandler();
-				
-				break;
-				
+			this._boundViewHandlerCC = this._viewEventHandlerCC.subscribeTo(this.getView(), ["onUpdateView", "onSelectView", "onUnselectView", "onHideView"], this);
+			
 		}
 		
 	},
 	//
-	_registerHardwareChangeHandler: function (target) {
+	_unregisterViewHandlersCC: function () {
+common.debug.level[1] && KONtx.cc.log("_unregisterViewHandlersCC");
+		
+		if (this._boundViewHandlerCC) {
+			
+			this._boundViewHandlerCC.unsubscribeFrom(this.getView(), ["onUpdateView", "onSelectView", "onUnselectView", "onHideView"], this);
+			
+			this._boundViewHandlerCC = false;
+			
+		}
+		
+	},
+	//
+	_registerHardwareChangeHandler: function () {
 common.debug.level[3] && KONtx.cc.log("MediaTransportOverlay", "_registerHardwareChangeHandler");
 		
 		var engineInterface = KONtx.cc.engineInterface;
 		
 		if (engineInterface) {
 			
-			engineInterface.onStatusChanged = function () {
+			engineInterface.onStatusChanged = common.bind(function () {
 				
-				target.fire("onHardwareClosedCaptionStatusChanged", {
-					engineInterface: engineInterface
-				});
+				if ("captionsbutton" in this._controls) {
+					
+					this._controls.captionsbutton.fire("onHardwareClosedCaptionStatusChanged", {
+						engineInterface: engineInterface
+					});
+					
+				}
 				
-			};
+			}, this);
 			
 		}
 		
@@ -295,6 +281,81 @@ common.debug.level[3] && KONtx.cc.log("MediaTransportOverlay", "_unregisterHardw
 		if (engineInterface) {
 			
 			engineInterface.onStatusChanged = null;
+			
+		}
+		
+	},
+    //
+	_viewEventHandlerCC: function (event) {
+common.debug.level[1] && KONtx.cc.log("_viewEventHandler","event.type",event.type);
+		
+		switch (event.type) {
+			
+			case "onUpdateView":
+				
+				this._registerHardwareChangeHandler();
+				
+				break;
+				
+			case "onSelectView":
+				
+				this._overlayActivate(KONtx.mediaplayer.playlist.currentEntry.getCaptions(), KONtx.cc.getLanguage());
+				
+				break;
+				
+			case "onUnselectView":
+				
+				this._overlayDeactivate();
+				
+				break;
+				
+			case "onHideView":
+				
+				this._unregisterHardwareChangeHandler();
+				
+				this._overlayDeactivate(true);
+				
+				break;
+				
+		}
+		
+	},
+	//
+	_overlayActivate: function (captions, lang) {
+		
+		if (captions && lang) {
+			
+			// setup CaptionsOverlay
+			if (!("captions" in this._overlay)) {
+				
+				this._overlay.captions = new KONtx.control.CaptionsOverlay().appendTo(this.getView());
+				
+			}
+			
+			if ("captions" in this._overlay) {
+				
+				this._overlay.captions.fire("onActivate", {
+					url: captions.getEntryByLanguage(lang).url,
+					lang: lang
+				});
+				
+			}
+			
+		}
+		
+	},
+	//
+	_overlayDeactivate: function (purge) {
+		
+		if ("captions" in this._overlay) {
+			
+			this._overlay.captions.fire("onDeactivate");
+			
+			if (purge) {
+				
+				delete this._overlay.captions;
+				
+			}
 			
 		}
 		
@@ -456,30 +517,18 @@ common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "captionsbutton",
 					
 					var lang = event.payload.lang;
 					
+					var owner = this.owner;
+					
+					var view = this.getView();
+					
 					if (captions) {
 						
-						// setup CaptionsOverlay
-						if (!("captions" in this.owner._overlay)) {
-							
-							this.owner._overlay.captions = new KONtx.control.CaptionsOverlay().appendTo(this.getView());
-							
-						}
-						
-						this.owner._overlay.captions.fire("onActivate", {
-							url: captions.getEntryByLanguage(lang).url,
-							lang: lang
-						});
+						owner._overlayActivate(captions, lang);
 						
 					} else {
 						
 						// cc is activated but the video does not have cc
-						if ("captions" in this.owner._overlay) {
-							
-							this.owner._overlay.captions.fire("onDeactivate");
-							
-							delete this.owner._overlay.captions;
-							
-						}
+						owner._overlayDeactivate(true);
 						
 					}
                     
@@ -494,11 +543,9 @@ common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "captionsbutton",
                     
                     this.content.setSource(this.sources.normalSrc);
                     
-					if ("captions" in this.owner._overlay) {
-						
-						this.owner._overlay.captions.fire("onDeactivate");
-						
-					}
+					var owner = this.owner;
+					
+					owner._overlayDeactivate(true);
 					
                 },
                 onCaptionListRequest: function onCaptionListRequest(event) {
@@ -536,8 +583,6 @@ common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "captionsbutton",
 				},
             }
         }).appendTo(this);
-		
-		this._registerHardwareChangeHandler(this._controls.captionsbutton);
 		
     }
     //

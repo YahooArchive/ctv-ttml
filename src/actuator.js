@@ -55,7 +55,7 @@ KONtx.cc = (function kontx_cc_singleton() {
 		//
 		name: "CC",
 		//
-		version: "0.1.2",
+		version: "0.1.3",
 		//
 		log: common.debug.log,
 		//
@@ -72,12 +72,6 @@ KONtx.cc = (function kontx_cc_singleton() {
 			modulePath: KONtx.config.ccModulePath,
             // location of module images
 			assetPath: KONtx.config.ccModulePath + "assets/" + (screen.width + "x" + screen.height) + "/",
-			//
-			rendererType: "auto",
-			// these values determine if the hardware fork for the renderer is used or not
-			rendererTypes: ["auto", "yahoo"],
-			// the default renderer path
-			rendererDefaultIndex: 0,
             // the yql entry point
 			yqlHost: "http://ctv.yql.yahooapis.com/v1/public/yql",
             // the query used to normalize the ttml document
@@ -103,8 +97,10 @@ KONtx.cc = (function kontx_cc_singleton() {
             // this will allow the arbitrary testing of content from any point in time
             // example: to test entries that start at 20 minutes use (60 * 20)
             // common.debug.level must be >= 2
-            debug_timeSignatureOffset: common.debug.level[2] ? 60 : null,
+            debug_timeSignatureOffset: common.debug.level[2] ? 0 : null,
             // a ttml document uri that will be force loaded instead of the uri provided by the video
+			// in order for this to work there has to be a uri provided at the implementation point otherwise cc may be
+			// deactivated which would prevent the use of this file
             // common.debug.level must be >= 2
             debug_ttmlLocation: common.debug.level[2] ? "" : null,
 			//
@@ -143,12 +139,12 @@ KONtx.cc = (function kontx_cc_singleton() {
         //
 		get renderer() {
 			
-			var type = this.config.rendererType;
+			var type = "auto";
 			
 			// check for SDK/ADK/WDK builds and force "yahoo"
 			if ((platform.build.type == "sim") && !DEBUG_HARDWARE_SWITCH) {
 				
-				type = this.config.rendererTypes[1];
+				type = "software";
 				
 common.debug.level[2] && this.log("renderer", "detected build type \"" + platform.build.type + "\" so forcing (KONtx.cc.renderer == " + type + ")");
 				
@@ -159,8 +155,6 @@ common.debug.level[2] && this.log("renderer", "detected build type \"" + platfor
 		},
 		//
 		set renderer(type) {
-			
-			this.config.rendererType = (type && (this.config.rendererTypes.indexOf(type) != -1)) ? type : this.config.rendererTypes[this.config.rendererDefaultIndex];
 			
 		},
 		// 
