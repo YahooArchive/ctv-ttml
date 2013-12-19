@@ -41,6 +41,12 @@ Testing widevine playlist entry support
 	KONtx.media.WidevinePlaylistEntry.prototype.initialize
 	s=p._streamsGetter()
 	
+	// check addURL method
+	p=new KONtx.media.WidevinePlaylistEntry()
+	p.addURL
+	
+	KONtx.mediaplayer.playlist.currentEntry.getCaptions()
+	
 ***********************************************************************************************************************/
 // protect the framework playlist
 (function kontx_media_playlist_singleton_protector() {
@@ -52,18 +58,14 @@ Testing widevine playlist entry support
         delete KONtx.media.Playlist;
         
         KONtx.media.__defineGetter__("Playlist", function () {
-            
             return playlist;
-            
         });
         
         KONtx.media.__defineSetter__("Playlist", function () {
-            
-common.fire("onWarning", {
-    name: "Attempted overload",
-    message: "someone is trying to overload the KONtx.media.Playlist object from within the CC module"
-});
-            
+			common.fire("onWarning", {
+				name: "Attempted overload",
+				message: "someone is trying to overload the KONtx.media.Playlist object from within the CC module"
+			});
         });
         
     }
@@ -101,18 +103,14 @@ KONtx.media.Playlist.implement({
         delete KONtx.media.PlaylistEntry;
         
         KONtx.media.__defineGetter__("PlaylistEntry", function () {
-            
             return playlistEntry;
-            
         });
         
         KONtx.media.__defineSetter__("PlaylistEntry", function () {
-            
-common.fire("onWarning", {
-    name: "Attempted overload",
-    message: "someone is trying to overload the KONtx.media.PlaylistEntry object from within the CC module"
-});
-            
+			common.fire("onWarning", {
+				name: "Attempted overload",
+				message: "someone is trying to overload the KONtx.media.PlaylistEntry object from within the CC module"
+			});
         });
         
     }
@@ -203,43 +201,143 @@ common.debug.level[3] && KONtx.cc.log("PlaylistEntry config", common.dump(this.c
     }
     //
 });
-// protect the framework widevinePlaylistEntry
-(function kontx_media_windevinePlaylistEntry_singleton_protector() {
+// check for widevine support and update methods
+if ("WidevinePlaylistEntry" in KONtx.media) {	
 	
-    var widevinePlaylistEntry = KONtx.media.WidevinePlaylistEntry;
-    
-    if (!("__getter" in widevinePlaylistEntry)) {
-        
-        delete KONtx.media.WidevinePlaylistEntry;
-        
-        KONtx.media.__defineGetter__("WidevinePlaylistEntry", function () {
-            
-            return widevinePlaylistEntry;
-            
-        });
-        
-        KONtx.media.__defineSetter__("WidevinePlaylistEntry", function () {
-            
+	(function kontx_media_widevinePlaylistEntry_singleton_protector() {
+		
+		var playlistEntry = KONtx.media.WidevinePlaylistEntry;
+		
+		if (!("__getter" in playlistEntry)) {
+			
+			delete KONtx.media.WidevinePlaylistEntry;
+			
+			KONtx.media.__defineGetter__("WidevinePlaylistEntry", function () {
+				
+				return playlistEntry;
+				
+			});
+			
+			KONtx.media.__defineSetter__("WidevinePlaylistEntry", function () {
+				
 common.fire("onWarning", {
-    name: "Attempted overload",
-    message: "someone is trying to overload the KONtx.media.WidevinePlaylistEntry object from within the CC module"
+	name: "Attempted overload",
+	message: "someone is trying to overload the KONtx.media.WidevinePlaylistEntry object from within the CC module"
 });
-            
-        });
-        
-    }
-    
-})();
-//
-KONtx.media.WidevinePlaylistEntry.implement({
-	//
-	_streamsGetter: function () {
+				
+			});
+			
+		}
 		
-		return [{url: this.url, bitrate: -1, captions: this.getCaptions()}];
-		
-	},
+	})();
 	//
-});
+	KONtx.media.WidevinePlaylistEntry.implement({
+		//
+		initialize: function () {
+			
+			this.__startIndex = this.config.startIndex;
+			
+			this.__defineGetter__("startIndex", function () {
+				return this.__startIndex;
+			});
+			
+			this.__defineSetter__("startIndex", function (value) {
+				this.__startIndex = Number(value);
+			});
+			
+			this._streams = [];
+			
+common.debug.level[3] && KONtx.cc.log("WidevinePlaylistEntry config", common.dump(this.config));
+			
+			if (this.config.url) {
+				
+				this._streams.push({ url: this.config.url, bitrate: this.config.bitrate, captions: (this.config.captions || null) });
+				
+			}
+			
+			if (this.config.streams instanceof Array) {
+				
+				this.config.streams.forEach(function (stream) {
+					
+					if (stream.url) {
+						
+						this._streams.push({ url: stream.url, bitrate: (stream.bitrate || this.config.bitrate), captions: (stream.captions || null) });
+						
+					} else {
+						
+						throw new Error("Invalid stream: must at minimum provide a URL");
+						
+					}
+					
+				}, this);
+				
+			}
+			
+			this._isSorted = false;
+			
+			// intentionally no setter here, use helpers below
+			this.__defineGetter__("streams", this._streamsGetter);
+	  
+			// above this comment should be identical to standard playlistEntry
+	
+			this.url = this.config.url;
+	
+			this.__defineGetter__('options', function() {
+				return this.__options;
+			});
+	
+			this.__defineSetter__('options', function(value) {
+				if(!value || value instanceof KONtx.media.drm.WidevineOptions) {
+					this.__options = value;
+				} else {
+					throw new Error("Invalid options value. Must be an instance of KONtx.media.drm.WidevineOptions");
+				}
+			});
+	
+			this.options = this.config.options;
+		},
+		//
+		addURL: function (url, bitrate, captions) {
+			
+			captions = captions || null;
+			
+			if (url) {
+				
+				this._isSorted = false;
+				
+				this._streams.push({ url: url, bitrate: bitrate, captions: captions });
+				
+			} else {
+				
+				throw new Error("Invalid stream: must at minimum provide a URL");
+				
+			}
+			
+			return this;
+			
+		},
+		//
+		getCaptions: function () {
+			
+			var captions = null;
+			
+			if (("captions" in this._streams[0]) && this._streams[0].captions) {
+				
+				captions = this._streams[0].captions;
+				
+			}
+			
+			return captions;
+			
+		},
+		//
+		_streamsGetter: function () {
+			return [{url: this.url, bitrate: -1, captions: this.getCaptions()}];
+		},
+		//
+	});
+	//
+}
 //
 /***********************************************************************************************************************
 
@@ -306,11 +404,36 @@ common.debug.level[3] && KONtx.cc.log("MediaTransportOverlay", "_registerHardwar
 			
 			engineInterface.onStatusChanged = common.bind(function () {
 				
-				if ("captionsbutton" in this._controls) {
+				var button = ("captionsbutton" in this._controls) ? this._controls.captionsbutton : null;
+				
+				var engineInterface = KONtx.cc.engineInterface;
+				
+				if (engineInterface && button) {
 					
-					this._controls.captionsbutton.fire("onHardwareClosedCaptionStatusChanged", {
-						engineInterface: engineInterface
-					});
+					if (engineInterface.status == true) {
+						
+						if (!button.activated) {
+							
+							if ("currentEntry" in KONtx.mediaplayer.playlist) {
+								
+								button.fire("onActivate", {
+									captions: KONtx.mediaplayer.playlist.currentEntry.getCaptions(),
+									lang: KONtx.cc.getLanguage(),
+								});
+								
+							}
+							
+						}
+						
+					} else {
+						
+						if (button.activated) {
+							
+							button.fire("onDeactivate");
+							
+						}
+						
+					}
 					
 				}
 				
@@ -346,7 +469,11 @@ common.debug.level[1] && KONtx.cc.log("_viewEventHandler","event.type",event.typ
 				
 			case "onSelectView":
 				
-				this._overlayActivate(KONtx.mediaplayer.playlist.currentEntry.getCaptions(), KONtx.cc.getLanguage());
+				if ("currentEntry" in KONtx.mediaplayer.playlist) {
+					
+					this._overlayActivate(KONtx.mediaplayer.playlist.currentEntry.getCaptions(), KONtx.cc.getLanguage());
+					
+				}
 				
 				break;
 				
@@ -370,21 +497,25 @@ common.debug.level[1] && KONtx.cc.log("_viewEventHandler","event.type",event.typ
 	//
 	_overlayActivate: function (captions, lang) {
 		
-		if (captions && lang) {
+		if (KONtx.cc.enabled) {
 			
-			// setup CaptionsOverlay
-			if (!("captions" in this._overlay)) {
+			if (captions && lang) {
 				
-				this._overlay.captions = new KONtx.control.CaptionsOverlay().appendTo(this.getView());
+				// setup CaptionsOverlay
+				if (!("captions" in this._overlay)) {
+					
+					this._overlay.captions = new KONtx.control.CaptionsOverlay().appendTo(this.getView());
+					
+				}
 				
-			}
-			
-			if ("captions" in this._overlay) {
-				
-				this._overlay.captions.fire("onActivate", {
-					url: captions.getEntryByLanguage(lang).url,
-					lang: lang
-				});
+				if ("captions" in this._overlay) {
+					
+					this._overlay.captions.fire("onActivate", {
+						url: captions.getEntryByLanguage(lang).url,
+						lang: lang
+					});
+					
+				}
 				
 			}
 			
@@ -400,6 +531,10 @@ common.debug.level[1] && KONtx.cc.log("_viewEventHandler","event.type",event.typ
 			
 			if (purge) {
 				
+				// remove node
+				this._overlay.captions.element.removeFromParentNode();
+				
+				// remove pointer
 				delete this._overlay.captions;
 				
 			}
@@ -501,6 +636,7 @@ common.debug.level[3] && KONtx.cc.log("MediaTransportOverlay", "_createCaptionsB
 				
             },
             events: {
+				// button press capture to toggle on/off cc
                 onSelect: function onSelect(event) {
 common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "captionsbutton", "selecting captions button");
                     
@@ -550,7 +686,6 @@ common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "captionsbutton",
                     }
                     
                 },
-                // this button press turns CC on
 				onActivate: function onActivate(event) {
 common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "captionsbutton", "onActivate");
                     
@@ -580,7 +715,6 @@ common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "captionsbutton",
 					}
                     
                 }, 
-                // this button press turns CC off
 				onDeactivate: function onDeactivate(event) {
 common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "captionsbutton", "onDeactivate");
                     
@@ -600,34 +734,6 @@ common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "captionsbutton",
                     // phase 2 implementation
                     
                 },
-				onHardwareClosedCaptionStatusChanged: function onHardwareClosedCaptionStatusChanged(event) {
-common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "captionsbutton", "onHardwareClosedCaptionStatusChanged");
-					
-					var engineInterface = event.payload.engineInterface;
-					
-					if (engineInterface) {
-						
-						if (engineInterface.status == true) {
-							
-							if (!this.activated) {
-								
-								this.fire("onActivate");
-								
-							}
-							
-						} else {
-							
-							if (this.activated) {
-								
-								this.fire("onDeactivate");
-								
-							}
-							
-						}
-						
-					}
-					
-				},
             }
         }).appendTo(this);
 		

@@ -217,3 +217,10 @@
 		- user customization
 		- default vs custom parser
 		- software vs hardware renderer
+0.1.5
+	fixed bug where overlay was not being removed from the dom when the view was hidden
+	added check to make sure captions are enabled before activating the overlay
+	added check to make sure we have a current entry in the playlist before activating the overlay when returning to a view with an onSelectView
+	moved the onStatusChanged handler for messages coming in from the hardware out of the button creation and into the view lifecycle handler for onUpdateView
+	updated the WidevinePlaylistEntry class
+	

@@ -55,7 +55,7 @@ KONtx.cc = (function kontx_cc_singleton() {
 		//
 		name: "CC",
 		//
-		version: "0.1.4",
+		version: "0.1.5",
 		//
 		log: common.debug.log,
 		//
@@ -98,14 +98,15 @@ KONtx.cc = (function kontx_cc_singleton() {
             // example: to test entries that start at 20 minutes use (60 * 20)
             // common.debug.level must be >= 2
             get debug_timeSignatureOffset () {
-				return common.debug.level[2] ? 35 : null;
+				return common.debug.level[2] ? 0 : null;
 			},
             // a ttml document uri that will be force loaded instead of the uri provided by the video
 			// in order for this to work there has to be a uri provided at the implementation point otherwise cc may be
 			// deactivated which would prevent the use of this file
             // common.debug.level must be >= 2
             get debug_ttmlLocation () {
-				return common.debug.level[2] ? "http://cdn.sensio.tv/u/ops/Sensio/ESCAPEPLANET_M-english_DXFP.xml" : null;
+				//return common.debug.level[2] ? "http://avodxml-a.akamaihd.net/179586/prod/ebe24baa-cb8d-4133-9770-83bfff23bb5a/NBCU-T0ALU-FastFurious6_Caption2398_en-US.dfxp" : null;
+				return common.debug.level[2] ? "" : null;
 			},
 			//
 		},

@@ -41,6 +41,10 @@ This object does a few things.
 3) it responds to timeindex changes on the mediaplayer
 4) it consumes the ttml json payload
 5) it renders the ttml content
+
+onDataReceived
+onPlayerTimeIndexChange
+
 */
 //
 KONtx.control.CaptionsOverlay = new KONtx.Class({
@@ -511,7 +515,8 @@ common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "processBody", "complet
             // this will allow the testing of content that is 30 minutes in at the 5 minute mark
             // this is to be used to test ttml for long form content
             modifier = KONtx.cc.config.debug_timeSignatureOffset;
-        }
+common.debug.level[2] && KONtx.cc.log("convertTimeSignature","modifier",modifier);
+		}
         
         return ((60 * 60) * Number(split[0])) + (60 * Number(split[1])) + Number(split[2]) + Number(fraction) - modifier;
         
@@ -874,14 +879,21 @@ common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChang
 			
 common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "createEntryNode", "creating region", captionEntry.region);
 			
-			// create node
+			// create region node
 			regionNode = new Text();
 			
-			// add node to parent container
+			// add region node to parent container
 			parentElement.appendChild(regionNode);
 			
 			// add pointer to local stack
 			regionNodes[captionEntry.region] = regionNode;
+			
+			// decoupled nodes
+			//regionNode = new Frame();
+			//parentElement.appendChild(regionNode);
+			//regionNodes[captionEntry.region] = regionNode;
+			//var textNode = new Text();
+			//regionNode.appendChild(textNode);
 			
 		}
 		
@@ -895,6 +907,9 @@ common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChang
 		if ("styles" in captionEntry) {
 			
 			regionNode.setStyle(captionEntry.styles, true);
+			
+			// decoupled nodes
+			//regionNode.childNodes.item(0).setStyle(captionEntry.styles, true);
 			
 			// we do not support text-outline properties but we do support the outline
 			// since the css standard contradicts what the ttml standard states we will default to a black 1px outline
@@ -914,8 +929,17 @@ common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChang
 common.debug.level[5] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChange", "captionEntry", common.dump(captionEntry));
 		
 		if ("content" in captionEntry) {
+			// auto adjust
+			//regionNode.width = null;
+			//regionNode.height = null;
+			//regionNode.wrap = true;
+			//regionNode.style.backgroundColor = "blue";
+			//regionNode.text = captionEntry.content + "\nnow is the time for all good men\nto come to the aid of their country";
 			
 			regionNode.text = captionEntry.content;
+			
+			// decoupled nodes
+			//regionNode.childNodes.item(0).text = captionEntry.content;
 			
 		}
 		
