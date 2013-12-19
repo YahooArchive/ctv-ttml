@@ -142,8 +142,10 @@ For reference; the below performs the same as the above.
     });
 
 ------------------------------------------------------------------------------------------------------------------------
-Using a custom parser (MAKE SURE TO TRY THE DEFAULT PARSER FIRST)
+Using a custom parser
 ------------------------------------------------------------------------------------------------------------------------
+__MAKE SURE TO TRY THE DEFAULT PARSER FIRST__
+
 Adding a custom parser can be very time consuming/frustrating. The default parser should work on most caption documents.
 This solution is only for content providers that supply non-standard caption documents.
 
@@ -191,8 +193,10 @@ The ODT can be tested using the YQL console by inserting your ttml location. All
 
 
 ------------------------------------------------------------------------------------------------------------------------
-User customizations (see "Notes about the renderer" above)
-------------------------------------------------------------------------------------------------------------------------    
+User customizations
+------------------------------------------------------------------------------------------------------------------------
+__see "Notes about the renderer" above__
+
 We do not support the user customization of captions by means of a GUI supplied by our software based approach.
 
 There are two paths that our CC module handles for authors.
