@@ -55,7 +55,7 @@ KONtx.cc = (function kontx_cc_singleton() {
 		//
 		name: "CC",
 		//
-		version: "0.1.5",
+		version: "0.1.6",
 		//
 		log: common.debug.log,
 		//

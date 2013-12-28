@@ -85,9 +85,9 @@ KONtx.control.CaptionsOverlay = new KONtx.Class({
         }
     },
     // runtime
-    state: {},
-	//
-	hardwareStateSet: false,
+    state: {
+		hardwareStateSet: false,
+	},
 	//
 	useHardware: null,
     // storage

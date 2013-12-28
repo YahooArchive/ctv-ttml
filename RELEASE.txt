@@ -223,4 +223,6 @@
 	added check to make sure we have a current entry in the playlist before activating the overlay when returning to a view with an onSelectView
 	moved the onStatusChanged handler for messages coming in from the hardware out of the button creation and into the view lifecycle handler for onUpdateView
 	updated the WidevinePlaylistEntry class
+0.1.6
+	fixed bug where hardwareStateSet flag was defined outside of the state object
 	
