@@ -225,4 +225,5 @@
 	updated the WidevinePlaylistEntry class
 0.1.6
 	fixed bug where hardwareStateSet flag was defined outside of the state object
-	
+0.1.7
+	updated YQL host URL to https

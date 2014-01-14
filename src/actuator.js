@@ -55,7 +55,7 @@ KONtx.cc = (function kontx_cc_singleton() {
 		//
 		name: "CC",
 		//
-		version: "0.1.6",
+		version: "0.1.7",
 		//
 		log: common.debug.log,
 		//
@@ -73,7 +73,7 @@ KONtx.cc = (function kontx_cc_singleton() {
             // location of module images
 			assetPath: KONtx.config.ccModulePath + "assets/" + (screen.width + "x" + screen.height) + "/",
             // the yql entry point
-			yqlHost: "http://ctv.yql.yahooapis.com/v1/public/yql",
+			yqlHost: "https://ctv.yql.yahooapis.com/v1/public/yql",
             // the query used to normalize the ttml document
 			yqlQuery: "select * from ctv.ttml.normalize where url='%1'",
             // this will be auto-included during the load of the actuator file
