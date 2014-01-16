@@ -39,7 +39,7 @@ Integrating the module
         Contents/Javascript/cc
     
     2. Specify the local application path to the CC module
-        KONtx.config.ccModulePath = "Javascript/cc";
+        KONtx.config.ccModulePath = "Javascript/cc/";
     
     3. Load the CC module
         // typically this is loaded in the init.js
