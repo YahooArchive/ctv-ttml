@@ -227,3 +227,13 @@
 	fixed bug where hardwareStateSet flag was defined outside of the state object
 0.1.7
 	updated YQL host URL to https
+0.1.8
+	updated log statements with correct classname in implements.js
+	removed getter/setter interface from useHardware, renderer, and engineInterface in actuator.js properties to eliminate redundant calls
+	removed state property in actuator.js since the above calls no longer need to maintain state
+	added active/deactive state in control.js to prevent duplicate calls to parser during an onActivate call
+	corrected tracking of activeRegions. now reporting accurately and removing unused region references
+	reduced number of conditions required to enter the removeEntry routine
+	added extra condition to enter parser. now requires the local data to be fulfilled before executing
+	moved state var for tracking hardwareStateSet into it's correct location in config.state which is cloned to its final location on demand
+	added trailing slash to the README section for "Integrating the module". (reported by github user)

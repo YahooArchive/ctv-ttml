@@ -66,6 +66,7 @@ KONtx.control.CaptionsOverlay = new KONtx.Class({
             nextInterval: 0,
             nextCaptionIndex: 0,
             regionsActive: [],
+			hardwareStateSet: false,
         },
         data: {
             // used as an id to determine if we need to reparse
@@ -85,9 +86,7 @@ KONtx.control.CaptionsOverlay = new KONtx.Class({
         }
     },
     // runtime
-    state: {
-		hardwareStateSet: false,
-	},
+    state: {},
 	//
 	useHardware: null,
     // storage
@@ -578,25 +577,29 @@ common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "setHardwareState", "se
 		if (state) {
 			// active
 			
-			var captions = this.data.captions;
-			
-			var parser = captions.parser;
-			
-			var entry = captions.getDefaultEntry();
-			
-			if (entry) {
+			if (!this.data.fulfilled) {
 				
-				if (entry.parser && (common.typeOf(entry.parser) == "function")) {
+				var captions = this.data.captions;
+				
+				var parser = captions.parser;
+				
+				var entry = captions.getDefaultEntry();
+				
+				if (entry) {
 					
-					parser = entry.parser;
+					if (entry.parser && (common.typeOf(entry.parser) == "function")) {
+						
+						parser = entry.parser;
+						
+					}
+					
+					parser(entry.url, common.bind(function (result) {
+						
+						this.fire("onDataReceived", result);
+						
+					}, this));
 					
 				}
-				
-				parser(entry.url, common.bind(function (result) {
-					
-					this.fire("onDataReceived", result);
-					
-				}, this));
 				
 			}
 			
@@ -697,7 +700,7 @@ common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "setSoftwareState", "re
 		
 		var nextCaptionIndex = this.state.nextCaptionIndex;
 		
-common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChange[" + currentInterval + "]", "currentInterval:" + currentInterval, "nextInterval:" + nextInterval, "nextCaptionIndex:" + nextCaptionIndex, "regionsActive:" + (regionsActive.length ? regionsActive.toString() : "none"));
+common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "processEntries[" + currentInterval + "]", "currentInterval:" + currentInterval, "nextInterval:" + nextInterval, "nextCaptionIndex:" + nextCaptionIndex, "regionsActive:" + (regionsActive.length ? String(regionsActive.length) : "0"));
 		
 		// do we have open regions to check for removal
 		if (regionsActive.length) {
@@ -708,12 +711,16 @@ common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChang
 		
 		// check if we have a previously recorded interval to start at or if
 		// not then we must assume this is our first loop
-		if ((nextInterval == currentInterval) || (nextInterval < currentInterval) || (nextInterval == 0)) {
+		if ((nextInterval <= currentInterval) || (nextInterval == 0)) {
 			
 			// is our next check point behind the current interval
-			if (currentInterval > nextInterval) {
+			if (common.debug.level[2]) {
 				
-common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChange[" + currentInterval + "]", "the sequencer got off track", "currentInterval:" + currentInterval, "nextInterval:" + nextInterval);
+				if (currentInterval > nextInterval) {
+					
+KONtx.cc.log("CaptionsOverlay", "processEntries[" + currentInterval + "]", "the sequencer got off track", "currentInterval:" + currentInterval, "nextInterval:" + nextInterval);
+					
+				}
 				
 			}
 			
@@ -764,7 +771,7 @@ common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChang
 			// if time of entry is at the current interval then add the region
 			if (captionEntry.begin == currentInterval) {
 				
-common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "addEntries[" + currentInterval + "]", "ADD    -> region:" + captionEntry.region, "index:" + captionIndex, "time:(b):" + captionEntry.begin + ",(e)" + captionEntry.end, "content:" + (captionEntry.content || (captionEntry.span && captionEntry.span.content) || "EMPTY"));
+common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "addEntries[" + currentInterval + "]", "region:" + captionEntry.region, "index:" + captionIndex, "time:(b):" + captionEntry.begin + ",(e)" + captionEntry.end, "content:" + (captionEntry.content || (captionEntry.span && captionEntry.span.content) || "EMPTY"));
 				regionNode = this.createEntryNode(regionNodes, captionEntry);
 				
 				this.applyEntryStyles(regionNode, captionEntry);
@@ -822,7 +829,7 @@ common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "addEntries[" + current
 				
 				captionEntry = captionsBody[captionIndex];
 				
-common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChange[" + currentInterval + "]", "OPEN   -> region:" + captionEntry.region, "index:" + captionIndex, "time:(b):" + captionEntry.begin + ",(e)" + captionEntry.end, "content:" + captionEntry.content);
+KONtx.cc.log("CaptionsOverlay", "removeEntries[" + currentInterval + "]", "OPEN   -> region:" + captionEntry.region, "index:" + captionIndex, "time:(b):" + captionEntry.begin + ",(e)" + captionEntry.end, "content:" + captionEntry.content);
 				
 			}
 			
@@ -840,9 +847,16 @@ common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChang
 			// then remove the region
 			if (captionEntry.end <= currentInterval) {
 				
-common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChange[" + currentInterval + "]", "REMOVE -> region:" + captionEntry.region, "index:" + captionIndex, "time:(b):" + captionEntry.begin + ",(e)" + captionEntry.end, "content:" + captionEntry.content);
+common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "removeEntries[" + currentInterval + "]", "region:" + captionEntry.region, "index:" + captionIndex, "time:(b):" + captionEntry.begin + ",(e)" + captionEntry.end, "content:" + captionEntry.content);
 				
+				// turn off visibility
 				regionNodes[captionEntry.region].visible = false;
+				
+				// remove the active region
+				regionsActive.splice(index, 1);
+				
+				// only do this when we expand the model and need to start collecting nodes
+				//this.destroyEntryNode(regionNodes, captionEntry);
 				
 			} else {
 				
@@ -853,6 +867,20 @@ common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChang
 		}
 		
 		this.state.regionsActive = regionsStillActive;
+		
+	},
+	//
+	destroyEntryNode: function (regionNodes, captionEntry) {
+		
+		// careful, we don't want to remove it if it is being reused by another entry
+		
+		var regionNode = regionNodes[captionEntry.region];
+		
+		if (regionNode) {
+			
+			regionNode.removeFromParentNode();
+			
+		}
 		
 	},
 	//
@@ -952,44 +980,54 @@ common.debug.level[5] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChang
 common.debug.level[2] && KONtx.cc.log("CaptionsOverlay", "onActivate");
 common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onActivate", common.dump(event.payload));
         
-        var activeUrl = event.payload.url;
-		
-		var activeInput = null;
-		
-		this.bindControlStop();
-		
-		this.bindStateChange();
-		
-		this.bindTimeIndexChange();
-		
+		if (this.state.active) {
+common.debug.level[2] && KONtx.cc.log("CaptionsOverlay", "onActivate", "already active");
+			
+		} else {
+common.debug.level[2] && KONtx.cc.log("CaptionsOverlay", "onActivate", "not active yet");
+			
+			var activeUrl = event.payload.url;
+			
+			var activeInput = null;
+			
+			this.bindControlStop();
+			
+			this.bindStateChange();
+			
+			this.bindTimeIndexChange();
+			
 common.debug.level[2] && KONtx.cc.log("CaptionsOverlay", "onActivate", "clearing state");
-		this.state = common.clone(this.config.state);
-		
-		// check to see if we came back to the same url
-		if (activeUrl != this.data.id) {
+			this.state = common.clone(this.config.state);
+			
+			this.state.active = true;
+			
+			// check to see if we came back to the same url
+			if (activeUrl != this.data.id) {
 common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "clearing data (ids don't match)");
 common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "   old id: " + this.data.id);
 common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "   new id: " + activeUrl);
+				
+				// get a fresh copy of the data object
+				this.data = common.clone(this.config.data);
+				
+				// assign an id for tracking
+				this.data.id = activeUrl;
+				
+				// populate any captions that exist in the current entry of the mediaplayer
+				this.data.captions = KONtx.mediaplayer.playlist.currentEntry.getCaptions();
+				
+			}
 			
-			// get a fresh copy of the data object
-			this.data = common.clone(this.config.data);
-			
-			// assign an id for tracking
-			this.data.id = activeUrl;
-			
-			// populate any captions that exist in the current entry of the mediaplayer
-			this.data.captions = KONtx.mediaplayer.playlist.currentEntry.getCaptions();
-			
-		}
-		
-		if (this.data.captions) {
+			if (this.data.captions) {
 common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "found captions");
 common.debug.level[5] && KONtx.cc.log(common.dump(this.data.captions));
-			
-			this[KONtx.cc.useHardware ? "setHardwareState" : "setSoftwareState"](true);
-			
-		} else {
+				
+				this[KONtx.cc.useHardware ? "setHardwareState" : "setSoftwareState"](true);
+				
+			} else {
 common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "no captions found");
+				
+			}
 			
 		}
 		
@@ -998,6 +1036,8 @@ common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "no capti
     onDeactivate: function (event) {
 common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "onDeactivate");
         
+		this.state.active = false;
+		
 		this[KONtx.cc.useHardware ? "setHardwareState" : "setSoftwareState"](false);
 		
 		this.unbindTimeIndexChange();

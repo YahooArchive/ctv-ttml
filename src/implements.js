@@ -365,14 +365,14 @@ KONtx.control.MediaTransportOverlay.implement({
     },
 	//
 	_onAppendedCC: function () {
-common.debug.level[1] && KONtx.cc.log("_onAppendedCC");
+common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "_onAppendedCC");
 		
 		this._registerViewHandlersCC();
 		
 	},
 	//
 	_registerViewHandlersCC: function () {
-common.debug.level[1] && KONtx.cc.log("_registerViewHandlersCC");
+common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "_registerViewHandlersCC");
 		
 		if (!this._boundViewHandlerCC) {
 			
@@ -383,7 +383,7 @@ common.debug.level[1] && KONtx.cc.log("_registerViewHandlersCC");
 	},
 	//
 	_unregisterViewHandlersCC: function () {
-common.debug.level[1] && KONtx.cc.log("_unregisterViewHandlersCC");
+common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "_unregisterViewHandlersCC");
 		
 		if (this._boundViewHandlerCC) {
 			
@@ -457,7 +457,7 @@ common.debug.level[3] && KONtx.cc.log("MediaTransportOverlay", "_unregisterHardw
 	},
     //
 	_viewEventHandlerCC: function (event) {
-common.debug.level[1] && KONtx.cc.log("_viewEventHandler","event.type",event.type);
+common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "_viewEventHandlerCC", "event.type", event.type);
 		
 		switch (event.type) {
 			

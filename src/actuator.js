@@ -55,7 +55,7 @@ KONtx.cc = (function kontx_cc_singleton() {
 		//
 		name: "CC",
 		//
-		version: "0.1.7",
+		version: "0.1.8",
 		//
 		log: common.debug.log,
 		//
@@ -111,10 +111,7 @@ KONtx.cc = (function kontx_cc_singleton() {
 			//
 		},
         //
-		state: {
-			engineInterface: false,
-			useHardware: false,
-		},
+		state: {},
 		//
         playerStatesLegend: (function () {
             
@@ -141,27 +138,6 @@ KONtx.cc = (function kontx_cc_singleton() {
 		playerStates: KONtx.mediaplayer.constants.states,
 		//
         /**************************************************************************************************************/
-        //
-		get renderer() {
-			
-			var type = "auto";
-			
-			// check for SDK/ADK/WDK builds and force "yahoo"
-			if ((platform.build.type == "sim") && !DEBUG_HARDWARE_SWITCH) {
-				
-				type = "software";
-				
-common.debug.level[2] && this.log("renderer", "detected build type \"" + platform.build.type + "\" so forcing (KONtx.cc.renderer == " + type + ")");
-				
-			}
-			
-			return type;
-			
-		},
-		//
-		set renderer(type) {
-			
-		},
 		// 
         get enabled() {
             
@@ -235,58 +211,6 @@ common.debug.level[3] && this.log("playerActive", active);
 			return active;
 		},
 		//
-		get useHardware() {
-			
-			var useHardware = this.state.useHardware;
-			
-			if (!useHardware) {
-				
-				var hardwareSupportAvailable = false;
-				
-				var engineInterface = this.engineInterface;
-				
-				if (engineInterface) {
-					
-					hardwareSupportAvailable = true;
-					
-				}
-common.debug.level[3] && this.log("useHardware", "hardwareSupportAvailable", String(hardwareSupportAvailable));
-				
-				var useHardwareRenderer = (this.renderer == "auto") ? true : false;
-common.debug.level[3] && this.log("useHardware", "useHardwareRenderer", String(useHardwareRenderer));
-				
-				useHardware = (hardwareSupportAvailable && useHardwareRenderer) ? true : false;
-				
-				this.state.useHardware = useHardware;
-				
-			}
-			
-			return useHardware;
-		},
-		//
-		get engineInterface() {
-			
-			var engineInterface = this.state.engineInterface;
-			
-			if (!engineInterface) {
-				
-				if (typeof(tv) !== "undefined") {
-					
-					if ((typeof(tv.cc) !== "undefined") && (tv.cc != null)) {
-						
-						engineInterface = tv.cc;
-						
-						this.state.engineInterface = engineInterface;
-						
-					}
-					
-				}
-				
-			}
-			
-			return engineInterface;
-		},
-		//
         fetch: function (config) {
             
             var xhr;
@@ -351,6 +275,63 @@ common.debug.level[3] && this.log("useHardware", "useHardwareRenderer", String(u
 		//
 	};
 	//
+	instance.renderer = (function () {
+		
+		var type = "auto";
+		
+		// check for SDK/ADK/WDK builds and force "yahoo"
+		if ((platform.build.type == "sim") && !DEBUG_HARDWARE_SWITCH) {
+			
+			type = "software";
+			
+common.debug.level[2] && instance.log("renderer", "detected build type \"sim\" so forcing (KONtx.cc.renderer == software)");
+			
+		}
+		
+		return type;
+		
+	})();
+	//
+	instance.engineInterface = (function () {
+		
+		var engineInterface = false;
+		
+		if (typeof(tv) !== "undefined") {
+			
+			if ((typeof(tv.cc) !== "undefined") && (tv.cc != null)) {
+				
+				engineInterface = tv.cc;
+				
+			}
+			
+		}
+		
+		return engineInterface;
+		
+	})();
+	//
+	instance.useHardware = (function () {
+		
+		var hardwareSupportAvailable = false;
+		
+		if (instance.engineInterface) {
+			
+			hardwareSupportAvailable = true;
+			
+		}
+common.debug.level[3] && instance.log("useHardware", "hardwareSupportAvailable", String(hardwareSupportAvailable));
+		
+		var useHardwareRenderer = (instance.renderer == "auto") ? true : false;
+common.debug.level[3] && instance.log("useHardware", "useHardwareRenderer", String(useHardwareRenderer));
+		
+		var useHardware = (hardwareSupportAvailable && useHardwareRenderer) ? true : false;
+		
+		return useHardware;
+		
+	})();
+	//
+	/******************************************************************************************************************/
+	// 
 	if (DEBUG_HARDWARE_STATUS_CHANGED_HANDLER) {
 		
 		log("STARTING TEST TIMER");
