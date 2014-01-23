@@ -402,7 +402,7 @@ common.debug.level[3] && KONtx.cc.log("MediaTransportOverlay", "_registerHardwar
 		
 		if (engineInterface) {
 			
-			engineInterface.onStatusChanged = common.bind(function () {
+			engineInterface.onStateChanged = common.bind(function () {
 				
 				var button = ("captionsbutton" in this._controls) ? this._controls.captionsbutton : null;
 				
@@ -450,7 +450,7 @@ common.debug.level[3] && KONtx.cc.log("MediaTransportOverlay", "_unregisterHardw
 		
 		if (engineInterface) {
 			
-			engineInterface.onStatusChanged = null;
+			engineInterface.onStateChanged = null;
 			
 		}
 		

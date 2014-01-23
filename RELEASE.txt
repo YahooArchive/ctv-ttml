@@ -240,3 +240,6 @@
 0.1.9
 	corrected problem where we were not sending subsequent messages to hardware using setClosedCaptionUrls when toggling on/off CC
 	
+0.1.10
+	updated name of method which will handle state change messages from the hardware. was onStatusChanged now onStateChanged
+	
