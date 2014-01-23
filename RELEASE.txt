@@ -237,3 +237,6 @@
 	added extra condition to enter parser. now requires the local data to be fulfilled before executing
 	moved state var for tracking hardwareStateSet into it's correct location in config.state which is cloned to its final location on demand
 	added trailing slash to the README section for "Integrating the module". (reported by github user)
+0.1.9
+	corrected problem where we were not sending subsequent messages to hardware using setClosedCaptionUrls when toggling on/off CC
+	

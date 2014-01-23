@@ -559,6 +559,8 @@ common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "setHardwareState", "se
 			} else {
 				// deactivate
 				
+				this.state.hardwareStateSet = false;
+				
 				if (engineInterface.state) {
 common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "setHardwareState", "sending deactivate message to firmware");
 					
