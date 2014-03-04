@@ -1,4 +1,4 @@
-/*******************************************************************************
+/***********************************************************************************************************************
 Copyright (c) 2013, Yahoo.
 All rights reserved.
 
@@ -31,11 +31,9 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*******************************************************************************/
+***********************************************************************************************************************/
+/** Testing widevine playlist entry support ****************************************************************************
 
-/***********************************************************************************************************************
-
-Testing widevine playlist entry support
 	KONtx.media.PlaylistEntry.prototype.initialize
 	p=new KONtx.media.WidevinePlaylistEntry()
 	KONtx.media.WidevinePlaylistEntry.prototype.initialize
@@ -342,7 +340,7 @@ common.debug.level[3] && KONtx.cc.log("WidevinePlaylistEntry config", common.dum
 /***********************************************************************************************************************
 
 ***********************************************************************************************************************/
-// 
+//
 KONtx.control.MediaTransportOverlay.implement({
     //
     config: {
@@ -395,56 +393,37 @@ common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "_unregisterViewH
 		
 	},
 	//
-	_registerHardwareChangeHandler: function () {
-common.debug.level[3] && KONtx.cc.log("MediaTransportOverlay", "_registerHardwareChangeHandler");
+	_registerHardwareChangeHandlerCC: function () {
+common.debug.level[3] && KONtx.cc.log("MediaTransportOverlay", "_registerHardwareChangeHandlerCC");
 		
 		var engineInterface = KONtx.cc.engineInterface;
 		
 		if (engineInterface) {
 			
-			engineInterface.onStateChanged = common.bind(function () {
+			var owner = this;
+			
+			engineInterface.onStateChanged = function () {
+common.debug.level[1] && KONtx.cc.log("onStateChanged");
+				// we are getting a notification from the hardware
 				
-				var button = ("captionsbutton" in this._controls) ? this._controls.captionsbutton : null;
+				var button = ("captionsbutton" in owner._controls) ? owner._controls.captionsbutton : null;
 				
-				var engineInterface = KONtx.cc.engineInterface;
-				
-				if (engineInterface && button) {
+				if (button) {
+common.debug.level[1] && KONtx.cc.log("onStateChanged", "engineInterface.state", this.state);
+common.debug.level[1] && KONtx.cc.log("onStateChanged", "KONtx.cc.enabled", KONtx.cc.enabled);
 					
-					if (engineInterface.status == true) {
-						
-						if (!button.activated) {
-							
-							if ("currentEntry" in KONtx.mediaplayer.playlist) {
-								
-								button.fire("onActivate", {
-									captions: KONtx.mediaplayer.playlist.currentEntry.getCaptions(),
-									lang: KONtx.cc.getLanguage(),
-								});
-								
-							}
-							
-						}
-						
-					} else {
-						
-						if (button.activated) {
-							
-							button.fire("onDeactivate");
-							
-						}
-						
-					}
+					button.fire(this.state ? "onActivate" : "onDeactivate");
 					
 				}
 				
-			}, this);
+			};
 			
 		}
 		
 	},
 	//
-	_unregisterHardwareChangeHandler: function () {
-common.debug.level[3] && KONtx.cc.log("MediaTransportOverlay", "_unregisterHardwareChangeHandler");
+	_unregisterHardwareChangeHandlerCC: function () {
+common.debug.level[3] && KONtx.cc.log("MediaTransportOverlay", "_unregisterHardwareChangeHandlerCC");
 		
 		var engineInterface = KONtx.cc.engineInterface;
 		
@@ -463,15 +442,28 @@ common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "_viewEventHandle
 			
 			case "onUpdateView":
 				
-				this._registerHardwareChangeHandler();
+				this._registerHardwareChangeHandlerCC();
 				
 				break;
 				
 			case "onSelectView":
 				
-				if ("currentEntry" in KONtx.mediaplayer.playlist) {
+				/*
+				this handles the case where the player was left in an active/playing state, for example a video was
+				started and then dock overlay was activated or the user hit the back button. in this state the view is
+				no longer running but the video is. upon re-entry the view is brought back up. when this happens the CC
+				module hears the onSelect and tries to activate itself. in this case we don't want to reprocess the data
+				or re-wire up all the listeners(as they are already attached). in fact the only time we want to call
+				re-activate the overlay is when have previously received an onDeactivate
+				
+				if the video has never been started then the app itself will initiate the play which will trigger a
+				playlist update. when this happens the CC module will hear the playlist update and activate itself
+				*/
+				
+				if (KONtx.cc.playlistActive) {
+common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "_viewEventHandlerCC", "playlist is active");
 					
-					this._overlayActivate(KONtx.mediaplayer.playlist.currentEntry.getCaptions(), KONtx.cc.getLanguage());
+					this._overlayActivateCC();
 					
 				}
 				
@@ -479,15 +471,15 @@ common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "_viewEventHandle
 				
 			case "onUnselectView":
 				
-				this._overlayDeactivate();
+				this._overlayDeactivateCC();
 				
 				break;
 				
 			case "onHideView":
 				
-				this._unregisterHardwareChangeHandler();
+				this._unregisterHardwareChangeHandlerCC();
 				
-				this._overlayDeactivate(true);
+				this._overlayDeactivateCC(true);
 				
 				break;
 				
@@ -495,27 +487,21 @@ common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "_viewEventHandle
 		
 	},
 	//
-	_overlayActivate: function (captions, lang) {
+	_overlayActivateCC: function () {
+common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "_overlayActivateCC");
 		
 		if (KONtx.cc.enabled) {
 			
-			if (captions && lang) {
+			// setup CaptionsOverlay
+			if (!("captions" in this._overlay)) {
 				
-				// setup CaptionsOverlay
-				if (!("captions" in this._overlay)) {
-					
-					this._overlay.captions = new KONtx.control.CaptionsOverlay().appendTo(this.getView());
-					
-				}
+				this._overlay.captions = new KONtx.control.CaptionsOverlay().appendTo(this.getView());
 				
-				if ("captions" in this._overlay) {
-					
-					this._overlay.captions.fire("onActivate", {
-						url: captions.getEntryByLanguage(lang).url,
-						lang: lang
-					});
-					
-				}
+			}
+			
+			if ("captions" in this._overlay) {
+				
+				this._overlay.captions.fire("onActivate");
 				
 			}
 			
@@ -523,7 +509,8 @@ common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "_viewEventHandle
 		
 	},
 	//
-	_overlayDeactivate: function (purge) {
+	_overlayDeactivateCC: function (purge) {
+common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "_overlayDeactivateCC");
 		
 		if ("captions" in this._overlay) {
 			
@@ -543,6 +530,68 @@ common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "_viewEventHandle
 		
 	},
 	//
+	_buttonActivateCC: function () {
+common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "_buttonActivateCC");
+		
+		KONtx.cc.enabled = true;
+		
+		var engineInterface = KONtx.cc.engineInterface;
+		
+		// only toggle the hardware interface to active if we have an engine api and the state is inactive
+		if (engineInterface) {
+common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "_buttonActivateCC", "engineInterface.state[before]", engineInterface.state);
+			
+			if (!engineInterface.state) {
+common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "_buttonActivateCC", "setting engineInterface.state to true");
+				
+				engineInterface.state = true;
+				
+			}
+			
+		}
+common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "_buttonActivateCC", "engineInterface.state[after]", engineInterface.state);
+		
+		var captions = KONtx.cc.getCaptions();
+		
+		// only send an activation call if we actually have captions
+		if (captions) {
+			
+			this._overlayActivateCC();
+			
+		} else {
+			
+			// cc is active but the video does not have cc, so tear it down
+			this._overlayDeactivateCC(true);
+			
+		}
+		
+	},
+	//
+	_buttonDeactivateCC: function () {
+common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "_buttonDeactivateCC");
+		
+		KONtx.cc.enabled = false;
+		
+		var engineInterface = KONtx.cc.engineInterface;
+		
+		// only toggle the hardware interface to inactive if we have an engine api and the state is active
+		if (engineInterface) {
+common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "_buttonDeactivateCC", "engineInterface.state[before]", engineInterface.state);
+			
+			if (engineInterface.state) {
+common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "_buttonDeactivateCC", "setting engineInterface.state to false");
+				
+				engineInterface.state = false;
+				
+			}
+			
+		}
+common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "_buttonDeactivateCC", "engineInterface.state[after]", engineInterface.state);
+		
+		this._overlayDeactivateCC(true);
+		
+	},
+	//
     _onSourceUpdated: function (event) {
         
         this.parent(event);
@@ -552,24 +601,22 @@ common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "_viewEventHandle
             case "onPlayPlaylistEntry":
 common.debug.level[5] && KONtx.cc.log("MediaTransportOverlay", "onSourceUpdated", "onPlayPlaylistEntry", "event.payload", common.dump(event.payload, 3));
                 
-                if (this.config.captionsButton && this._controls.captionsbutton) {
+				var button = this._controls.captionsbutton;
+				
+                if (button) {
 					
                     var captions = event.payload.player.media.currentEntry.getCaptions();
 					
 common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "onSourceUpdated", "onPlayPlaylistEntry", "captions " + (captions ? "" : "not ") + "found in playlist, " + (captions ? "en" : "dis") + "abling the CC button");
                     
-					var button = this._controls.captionsbutton;
-					
                     if (captions) {
 						
 						button.setDisabled(false);
 						
+						// only proceed if the user button is already enabled
 						if (KONtx.cc.enabled) {
 							
-							button.fire("onActivate", {
-								captions: captions,
-								lang: KONtx.cc.getLanguage(),
-							});
+							button.fire("onActivate");
 							
 						}
 						
@@ -626,8 +673,6 @@ common.debug.level[3] && KONtx.cc.log("MediaTransportOverlay", "_createCaptionsB
             },
             initialize: function () {
                 
-                this.activated = false;
-                
                 this.sources = Theme.storage.get(KONtx.control.MediaTransportOverlay.prototype.ClassName + "CaptionsButtonImage");
                 
                 this.content = new KONtx.element.Image({
@@ -640,9 +685,7 @@ common.debug.level[3] && KONtx.cc.log("MediaTransportOverlay", "_createCaptionsB
                 onSelect: function onSelect(event) {
 common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "captionsbutton", "selecting captions button");
                     
-                    var captions = KONtx.mediaplayer.playlist.currentEntry.getCaptions();
-                    
-                    var lang = KONtx.cc.getLanguage();
+                    var captions = KONtx.cc.getCaptions();
                     
                     if (captions) {
                         
@@ -651,35 +694,14 @@ common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "captionsbutton",
                             action: "select",
                             payload: {
                                 captions: captions,
-                                buttonActivated: !this.activated,
-                                buttonDisabled: !this.disabled,
-                                multiLanguage: captions.isMultiLanguage,
-                                lang: lang
+                                buttonActivated: !KONtx.cc.active,
+                                buttonDisabled: !this.disabled
                             }
                         });
                         
                         if (buttonPressResult) {
                             
-                            if (captions.isMultiLanguage) {
-                                // multiple language entry
-                                
-                                this.fire("onCaptionListRequest", {
-                                    captions: captions,
-                                    buttonActivated: !this.activated,
-                                    buttonDisabled: !this.disabled,
-                                    multiLanguage: captions.isMultiLanguage,
-                                    lang: lang
-                                });
-                                
-                            } else {
-                                // single language entry
-                                
-                                this.fire((this.activated ? "onDeactivate" : "onActivate"), {
-                                    captions: captions,
-                                    lang: lang
-                                });
-                                
-                            }
+							this.fire(KONtx.cc.active ? "onDeactivate" : "onActivate");
                             
                         }
                         
@@ -689,50 +711,20 @@ common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "captionsbutton",
 				onActivate: function onActivate(event) {
 common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "captionsbutton", "onActivate");
                     
-					this.activated = true;
-                    
-                    KONtx.cc.enabled = this.activated;
-                    
-                    this.content.setSource(this.sources.activeSrc);
-                    
-					var captions = event.payload.captions;
+					// add the activation asset
+					this.content.setSource(this.sources.activeSrc);
 					
-					var lang = event.payload.lang;
-					
-					var owner = this.owner;
-					
-					var view = this.getView();
-					
-					if (captions) {
-						
-						owner._overlayActivate(captions, lang);
-						
-					} else {
-						
-						// cc is activated but the video does not have cc
-						owner._overlayDeactivate(true);
-						
-					}
+					this.owner._buttonActivateCC();
                     
                 }, 
 				onDeactivate: function onDeactivate(event) {
 common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "captionsbutton", "onDeactivate");
                     
-                    this.activated = false;
-                    
-                    KONtx.cc.enabled = this.activated;
-                    
-                    this.content.setSource(this.sources.normalSrc);
-                    
-					var owner = this.owner;
+					// remove the activation asset
+					this.content.setSource(this.sources.normalSrc);
 					
-					owner._overlayDeactivate(true);
+					this.owner._buttonDeactivateCC();
 					
-                },
-                onCaptionListRequest: function onCaptionListRequest(event) {
-                    
-                    // phase 2 implementation
-                    
                 },
             }
         }).appendTo(this);

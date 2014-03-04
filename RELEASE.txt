@@ -242,4 +242,23 @@
 	
 0.1.10
 	updated name of method which will handle state change messages from the hardware. was onStatusChanged now onStateChanged
-	
+0.1.11
+	removing language APIs because they are not being used by the module.
+	removed API - KONtx.media.Captions.isMultiLanguage
+	removed API - KONtx.media.Captions.getEntryByLanguage
+	removed API - KONtx.cc.getLanguage
+	removed API - KONtx.cc.setLanguage
+	updated the compatibility layer to work with certain 1.5.x platform packages that incorrectly report tv.system.deviceInfo as an empty string. this enables the ability to run Captions in software mode on these ADKs
+	fixed bug which would sometimes overlay a previous videos captions when leaving the player view and returning to a different video
+0.1.12
+	updated listener for onStateChanged to use correct state property tv.cc.state instead of tv.cc.status(older API)
+0.1.13
+	added KONtx.cc.active setter/getter which reflects the local state(not the hardware) of the module active/deactive
+	added KONtx.cc.playlistActive getter
+	added KONtx.cc.getCaptions method to more easily fetch caption objects from the current playlist of the mediaplayer
+	updated some variables in the control.js file
+	moved binding of handlers for media view into conditional so we don't end up with multiple bindings
+	added _buttonDeactivateCC method in implements.js to segregate the button and overlay paths
+	added _buttonActivateCC method in implements.js to segregate the button and overlay paths
+	updated some method names for the overloaded transport control class so that we don't have to copy and extend existing class methods on instantiation of the class making object creation a little quicker
+	tested against new MTK firmware (March 2014)

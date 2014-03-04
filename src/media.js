@@ -91,15 +91,6 @@ KONtx.media.Captions.prototype = {
         
     },
     /**
-     * @description tells if multiple caption languages are available
-     * @returns {Boolean}
-     */
-    get isMultiLanguage() {
-        
-        return this.entries.length > 1;
-        
-    },
-    /**
      * @description returns the default
      * @returns
      */
@@ -119,22 +110,6 @@ KONtx.media.Captions.prototype = {
         
     },
     /**
-     * @description get a captions entry by language
-     * @param {String} lang
-     * @default "en"
-     */
-    getEntryByLanguage: function (lang) {
-        
-        lang = (typeof(lang) !== "undefined") ? lang : KONtx.cc.config.defaultLanguage;
-        
-        var entries = this.entries.filter(function (entry) {
-           return entry.lang == lang;
-        });
-        
-        return entries.length ? entries[0] : null;
-        
-    },
-    /**
      * @description takes a ttml url and returns a json result
      */
     parser: function (url, callback) {
@@ -150,6 +125,7 @@ common.debug.level[4] && KONtx.cc.log("Captions", "parser", "fetch", "success", 
                 callback(json);
             }
         });
+		
     }
 	//
 };
@@ -161,8 +137,6 @@ KONtx.media.CaptionsEntry = function constructor_CaptionsEntry(config) {
     config = config || {};
 	
 	this.url = config.url || "";
-    
-    this.lang = config.lang || "en";
     
     this.parser = (config.parser && (common.typeOf(config.parser) == "function")) ? config.parser : null;
     

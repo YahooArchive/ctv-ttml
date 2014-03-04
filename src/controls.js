@@ -42,8 +42,10 @@ This object does a few things.
 4) it consumes the ttml json payload
 5) it renders the ttml content
 
-onDataReceived
-onPlayerTimeIndexChange
+common.debug.level=3;
+tv.cc.state;
+KONtx.cc.enabled;
+KONtx.cc.active;
 
 */
 //
@@ -66,7 +68,6 @@ KONtx.control.CaptionsOverlay = new KONtx.Class({
             nextInterval: 0,
             nextCaptionIndex: 0,
             regionsActive: [],
-			hardwareStateSet: false,
         },
         data: {
             // used as an id to determine if we need to reparse
@@ -83,7 +84,7 @@ KONtx.control.CaptionsOverlay = new KONtx.Class({
             body: [],
             // the normailzed settings which live on the root tt node
             config: {}
-        }
+        },
     },
     // runtime
     state: {},
@@ -523,50 +524,22 @@ common.debug.level[2] && KONtx.cc.log("convertTimeSignature","modifier",modifier
 	//
 	//-- activation/deactivation ---------------------------------------------------------------------------------------
 	//
-	setHardwareState: function (state) {
+	setHardwareState: function (active) {
 		
 		var engineInterface = KONtx.cc.engineInterface;
 		
 		if (engineInterface) {
 			
-			if (state) {
-				// activate
+			if (active) {
 				
-				if (KONtx.cc.playerActive) {
-					
-					if (!this.state.hardwareStateSet) {
 common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "setHardwareState", "sending cc urls to firmware");
-						var entry = this.data.captions.getDefaultEntry();
-						
-						var urls = [entry.url];
+				
+				var entry = this.data.captions.getDefaultEntry();
+				
+				var urls = [entry.url];
 common.debug.level[2] && KONtx.cc.log("CaptionsOverlay", "setHardwareState", common.dump(urls));
-						
-						engineInterface.setClosedCaptionUrls(urls);
-						
-					}
-					
-					this.state.hardwareStateSet = true;
-					
-					if (!engineInterface.state) {
-common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "setHardwareState", "sending activate message to firmware");
-						
-						engineInterface.state = true;
-						
-					}
-					
-				}
 				
-			} else {
-				// deactivate
-				
-				this.state.hardwareStateSet = false;
-				
-				if (engineInterface.state) {
-common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "setHardwareState", "sending deactivate message to firmware");
-					
-					engineInterface.state = false;
-					
-				}
+				engineInterface.setClosedCaptionUrls(urls);
 				
 			}
 			
@@ -574,21 +547,23 @@ common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "setHardwareState", "se
 		
 	},
 	//
-	setSoftwareState: function (state) {
+	setSoftwareState: function (active) {
 		
-		if (state) {
-			// active
+		if (active) {
+			// only run the routine below if we have not populated the data object with processed caption entries
 			
 			if (!this.data.fulfilled) {
 				
 				var captions = this.data.captions;
 				
+				// default parser provided by caption object
 				var parser = captions.parser;
 				
 				var entry = captions.getDefaultEntry();
 				
 				if (entry) {
 					
+					// check if the entry has a custom parser to use instead of the default
 					if (entry.parser && (common.typeOf(entry.parser) == "function")) {
 						
 						parser = entry.parser;
@@ -606,7 +581,6 @@ common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "setHardwareState", "se
 			}
 			
 		} else {
-			// deactive
 			
 			var regions = this.regions;
 			
@@ -980,54 +954,75 @@ common.debug.level[5] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChang
     // fired when the CC button is selected on the transport control
     onActivate: function (event) {
 common.debug.level[2] && KONtx.cc.log("CaptionsOverlay", "onActivate");
+common.debug.level[2] && KONtx.cc.log("CaptionsOverlay", "onActivate", "KONtx.cc.engineInterface.state", KONtx.cc.engineInterface.state);
 common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onActivate", common.dump(event.payload));
         
-		if (this.state.active) {
-common.debug.level[2] && KONtx.cc.log("CaptionsOverlay", "onActivate", "already active");
+		if (!KONtx.cc.active) {
+common.debug.level[2] && KONtx.cc.log("CaptionsOverlay", "onActivate", "inactive");
 			
-		} else {
-common.debug.level[2] && KONtx.cc.log("CaptionsOverlay", "onActivate", "not active yet");
+			var captions = KONtx.cc.getCaptions();
 			
-			var activeUrl = event.payload.url;
-			
-			var activeInput = null;
-			
-			this.bindControlStop();
-			
-			this.bindStateChange();
-			
-			this.bindTimeIndexChange();
-			
+			if (captions) {
+common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "found captions");
+common.debug.level[5] && KONtx.cc.log(common.dump(captions));
+				
+				// we could get a url from the event
+				var activeUrl = captions.getDefaultEntry().url;
+				
+				if (activeUrl) {
+					
+					this.bindControlStop();
+					
+					this.bindStateChange();
+					
+					this.bindTimeIndexChange();
+					
+					// resetting the state will delete the recorded time index and start the sequencer over
 common.debug.level[2] && KONtx.cc.log("CaptionsOverlay", "onActivate", "clearing state");
-			this.state = common.clone(this.config.state);
-			
-			this.state.active = true;
-			
-			// check to see if we came back to the same url
-			if (activeUrl != this.data.id) {
-common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "clearing data (ids don't match)");
+					this.state = common.clone(this.config.state);
+					
+					// check to see if we came back to the same url
+					if (activeUrl == this.data.id) {
+common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "ttml id match, using cached data");
+						
+					} else {
+						// resetting the data will delete the cached ttml data and force the data to be reprocessed
+common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "ttml id mismatch, purging cached data");
 common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "   old id: " + this.data.id);
 common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "   new id: " + activeUrl);
-				
-				// get a fresh copy of the data object
-				this.data = common.clone(this.config.data);
-				
-				// assign an id for tracking
-				this.data.id = activeUrl;
-				
-				// populate any captions that exist in the current entry of the mediaplayer
-				this.data.captions = KONtx.mediaplayer.playlist.currentEntry.getCaptions();
-				
-			}
-			
-			if (this.data.captions) {
-common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "found captions");
-common.debug.level[5] && KONtx.cc.log(common.dump(this.data.captions));
-				
-				this[KONtx.cc.useHardware ? "setHardwareState" : "setSoftwareState"](true);
+						
+						// get a fresh copy of the data object
+						this.data = common.clone(this.config.data);
+						
+						// assign an id for tracking
+						this.data.id = activeUrl;
+						
+						// populate any captions that exist in the current entry of the mediaplayer
+						this.data.captions = captions;
+						
+					}
+					
+					if (KONtx.cc.playerActive) {
+common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "player active");
+						
+						KONtx.cc.active = true;
+						
+						this[KONtx.cc.useHardware ? "setHardwareState" : "setSoftwareState"](true);
+						
+					} else {
+common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "player inactive");
+						// unset the active state so we can have another shot the next time this routine is run
+						
+						KONtx.cc.active = false;
+						
+					}
+					
+				}
 				
 			} else {
 common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "no captions found");
+				
+				KONtx.cc.active = false;
 				
 			}
 			
@@ -1038,7 +1033,7 @@ common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "no capti
     onDeactivate: function (event) {
 common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "onDeactivate");
         
-		this.state.active = false;
+		KONtx.cc.active = false;
 		
 		this[KONtx.cc.useHardware ? "setHardwareState" : "setSoftwareState"](false);
 		
@@ -1090,14 +1085,12 @@ common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onDataReceived", commo
 			case playerStates.PLAY:
 common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onPlayerStateChange", KONtx.cc.playerStatesLegend[event.payload.newState]);
 				
-				// trigger this once, there is a check in the handler to remove the listener for the index change
-				this.fire("onPlayerTimeIndexChange");
+				this.fire("onActivate");
 				
 				break;
 				
             case playerStates.STOP:
 common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onPlayerStateChange", KONtx.cc.playerStatesLegend[event.payload.newState]);                
-common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onPlayerStateChange", "stopping video");
                 
                 this.fire("onDeactivate");
                 
@@ -1117,14 +1110,14 @@ common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "onControlStop");
     onPlayerTimeIndexChange: function (event) {
 		
 		if (KONtx.cc.useHardware) {
-			
-			this.setHardwareState(true);
+			// remove the listener for timeindexchange from the mediaplayer to reduce noise
 			
 			this.unbindTimeIndexChange();
 			
 		} else {
 			
 			if (this.data.fulfilled) {
+				// make sure we have the data we need before processing
 				
 				this.processEntries(event.payload.timeIndex);
 				

@@ -51,21 +51,19 @@ KONtx.cc = (function kontx_cc_singleton() {
 	// set this to true to test the engine callback for cc state change
 	var DEBUG_HARDWARE_STATUS_CHANGED_HANDLER = DEBUG && DEBUG_HARDWARE_SWITCH && false;
 	//
+	var _local_state_active = false;
+	//
 	var instance = {
 		//
 		name: "CC",
 		//
-		version: "0.1.10",
+		version: "0.1.13",
 		//
 		log: common.debug.log,
 		//
 		toString: common.toString,
 		//
 		config: {
-            // default language
-            defaultLanguage: "en",
-			//
-			languageStorageKey: "captionsLanguage",
 			//
 			activatedStorageKey: "captionsActivated",
             // used to determine if the module is being loaded locally from an app or globally from the framework
@@ -110,8 +108,6 @@ KONtx.cc = (function kontx_cc_singleton() {
 			},
 			//
 		},
-        //
-		state: {},
 		//
         playerStatesLegend: (function () {
             
@@ -140,7 +136,7 @@ KONtx.cc = (function kontx_cc_singleton() {
         /**************************************************************************************************************/
 		// 
         get enabled() {
-            
+            //Boolean(Number(currentProfileData.get("captionsActivated")))
             var state = Boolean(Number(currentProfileData.get(this.config.activatedStorageKey)));
             
 //common.debug.level[3] && this.log("enabled", "getting cc button activation state: " + state);
@@ -160,34 +156,18 @@ KONtx.cc = (function kontx_cc_singleton() {
         },
         //
         /**************************************************************************************************************/
-        //
-        getLanguage: function () {
-            
-            var lang = currentProfileData.get(this.config.languageStorageKey);
-            
-common.debug.level[0] && this.log("getLanguage", "getting profile selected captions language: " + lang);
-            
-            if (!lang) {
-                
-                lang = this.config.defaultLanguage;
-                
-common.debug.level[0] && this.log("getLanguage", "no captions language found, saving now as: " + lang);
-                
-                this.setLanguage(lang);
-                
-            }
-            
-            return lang;
-            
-        },
-        //
-        setLanguage: function (lang) {
-            
-common.debug.level[0] && this.log("setLanguage", "setting profile selected captions language: " + lang);
-            
-            currentProfileData.set(this.config.languageStorageKey, lang);
-            
-        },
+		//
+		get active() {
+			
+			return _local_state_active;
+			
+		},
+		//
+		set active(state) {
+			
+			_local_state_active = state || false;
+			
+		},
         // 
         get playerState() {
             
@@ -206,9 +186,37 @@ common.debug.level[0] && this.log("setLanguage", "setting profile selected capti
 			];
 			
 			var active = (activeStates.indexOf(this.playerState) != -1) ? true : false;
-common.debug.level[3] && this.log("playerActive", active);
+common.debug.level[5] && this.log("playerActive", active);
 			
 			return active;
+		},
+		//
+		get playlistActive() {
+			
+			return KONtx.mediaplayer.isPlaylistEntryActive;
+			
+		},
+		//
+		getCaptions: function () {
+			
+			var captions = null;
+			
+			if (KONtx.mediaplayer.playlist) {
+				
+				if (("currentEntry" in KONtx.mediaplayer.playlist) && KONtx.mediaplayer.playlist.currentEntry) {
+					
+					if ("getCaptions" in KONtx.mediaplayer.playlist.currentEntry) {
+						
+						captions = KONtx.mediaplayer.playlist.currentEntry.getCaptions();
+						
+					}
+					
+				}
+				
+			}
+			
+			return captions;
+			
 		},
 		//
         fetch: function (config) {
