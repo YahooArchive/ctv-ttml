@@ -1,4 +1,4 @@
-CC Module
+CC Module rev 0.1.13
 ========
 
 ClosedCaptioning is supplied as an add-on module that will be embedded within a given application. It will provide the
