@@ -262,3 +262,8 @@
 	added _buttonActivateCC method in implements.js to segregate the button and overlay paths
 	updated some method names for the overloaded transport control class so that we don't have to copy and extend existing class methods on instantiation of the class making object creation a little quicker
 	tested against new MTK firmware (March 2014)
+0.1.14
+	changed the interface construction for KONtx.cc.engineInterface and KONtx.cc.useHardware. now we perform system level checks for hardware support each time the api is called instead of only once during construction of the api. this was causing failures on some systems that reported hardware support late. also this is required to support the new design of tvAPI in our v7 products which always report captioning support late.
+0.1.15
+	encoded the ttml URL before adding to the YQL query
+	

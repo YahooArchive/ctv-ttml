@@ -57,7 +57,7 @@ KONtx.cc = (function kontx_cc_singleton() {
 		//
 		name: "CC",
 		//
-		version: "0.1.13",
+		version: "0.1.15",
 		//
 		log: common.debug.log,
 		//
@@ -300,26 +300,19 @@ common.debug.level[2] && instance.log("renderer", "detected build type \"sim\" s
 		
 	})();
 	//
-	instance.engineInterface = (function () {
-		
+	instance.__defineGetter__("engineInterface", function () {
 		var engineInterface = false;
 		
-		if (typeof(tv) !== "undefined") {
+		if ((typeof(tv.cc) !== "undefined") && (tv.cc != null)) {
 			
-			if ((typeof(tv.cc) !== "undefined") && (tv.cc != null)) {
-				
-				engineInterface = tv.cc;
-				
-			}
+			engineInterface = tv.cc;
 			
 		}
 		
 		return engineInterface;
-		
-	})();
+	});
 	//
-	instance.useHardware = (function () {
-		
+	instance.__defineGetter__("useHardware", function () {
 		var hardwareSupportAvailable = false;
 		
 		if (instance.engineInterface) {
@@ -335,8 +328,7 @@ common.debug.level[3] && instance.log("useHardware", "useHardwareRenderer", Stri
 		var useHardware = (hardwareSupportAvailable && useHardwareRenderer) ? true : false;
 		
 		return useHardware;
-		
-	})();
+	});
 	//
 	/******************************************************************************************************************/
 	// 

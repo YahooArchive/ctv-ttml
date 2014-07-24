@@ -116,6 +116,8 @@ KONtx.media.Captions.prototype = {
 common.debug.level[3] && KONtx.cc.log("Captions", "parser", "default parser");
         url = (!_PRODUCTION && KONtx.cc.config.debug_ttmlLocation) ? KONtx.cc.config.debug_ttmlLocation : url;
 common.debug.level[2] && KONtx.cc.log("Captions", "parser", "url", url);
+		// RFC3986 encode URL for YQL query
+		url = encodeURIComponent(url).replace(/[!'()]/g, escape).replace(/\*/g, "%2A");
 		
         KONtx.cc.fetch({
             url: KONtx.cc.config.yqlHost + "?format=json&q=" + KONtx.cc.config.yqlQuery.replace("%1", url),
