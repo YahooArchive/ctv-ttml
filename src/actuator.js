@@ -57,7 +57,7 @@ KONtx.cc = (function kontx_cc_singleton() {
 		//
 		name: "CC",
 		//
-		version: "0.1.15",
+		version: "0.1.21",
 		//
 		log: common.debug.log,
 		//
@@ -182,7 +182,7 @@ KONtx.cc = (function kontx_cc_singleton() {
 				this.playerStates.PAUSE,
 				this.playerStates.FORWARD,
 				this.playerStates.REWIND,
-				this.playerStates.BUFFERING,
+				//this.playerStates.BUFFERING,
 			];
 			
 			var active = (activeStates.indexOf(this.playerState) != -1) ? true : false;

@@ -111,6 +111,8 @@ KONtx.control.CaptionsOverlay = new KONtx.Class({
 		// co.fire("onDataReceived")
         this.onDataReceived.subscribeTo(this, "onDataReceived", this);
         
+		this.bindStateChange();
+		
 		// defaults applied to containing frame
 		this.element.style.fontSize = this.config.fontSize;
 		this.element.style.color = "#FFF";
@@ -951,12 +953,33 @@ common.debug.level[5] && KONtx.cc.log("CaptionsOverlay", "onPlayerTimeIndexChang
 	//
 	//-- message handlers ----------------------------------------------------------------------------------------------
     //
-    // fired when the CC button is selected on the transport control
+	// this can be called by the button click on the transport control
+	// can be called by the PLAY statechange(after an INFOLOADED)
+	// can be called by the caption overlay during an onSelect
     onActivate: function (event) {
 common.debug.level[2] && KONtx.cc.log("CaptionsOverlay", "onActivate");
-common.debug.level[2] && KONtx.cc.log("CaptionsOverlay", "onActivate", "KONtx.cc.engineInterface.state", KONtx.cc.engineInterface.state);
-common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onActivate", common.dump(event.payload));
-        
+if (common.debug.level[4] && !common.isEmpty(event.payload)) {
+	KONtx.cc.log("CaptionsOverlay", "onActivate", common.dump(event.payload));
+}
+common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "onActivate", "KONtx.cc.enabled", KONtx.cc.enabled);
+common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "onActivate", "KONtx.cc.active", KONtx.cc.active);
+		
+		//
+		this.bindControlStop();
+		this.bindStateChange();
+		this.bindTimeIndexChange();
+		
+		if (KONtx.cc.enabled && !KONtx.cc.active) {
+common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "onActivate", "cc is enabled by the user but inactive", "sending notification to lua to activate cc");
+			var engineInterface = KONtx.cc.engineInterface;
+			
+			// only toggle the hardware interface to active if we have an engine api and the state is inactive
+			if (engineInterface) {
+				engineInterface.state = true;
+			}
+			
+		}
+		
 		if (!KONtx.cc.active) {
 common.debug.level[2] && KONtx.cc.log("CaptionsOverlay", "onActivate", "inactive");
 			
@@ -970,12 +993,6 @@ common.debug.level[5] && KONtx.cc.log(common.dump(captions));
 				var activeUrl = captions.getDefaultEntry().url;
 				
 				if (activeUrl) {
-					
-					this.bindControlStop();
-					
-					this.bindStateChange();
-					
-					this.bindTimeIndexChange();
 					
 					// resetting the state will delete the recorded time index and start the sequencer over
 common.debug.level[2] && KONtx.cc.log("CaptionsOverlay", "onActivate", "clearing state");
@@ -1002,7 +1019,9 @@ common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "   new i
 						
 					}
 					
+					//
 					if (KONtx.cc.playerActive) {
+						
 common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "player active");
 						
 						KONtx.cc.active = true;
@@ -1012,8 +1031,9 @@ common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "player a
 					} else {
 common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "player inactive");
 						// unset the active state so we can have another shot the next time this routine is run
-						
-						KONtx.cc.active = false;
+						// we don't need to do this since onActivate shouldn't be run multiple times per video playback request
+						// also we are only inside this condition because it is already false
+						//KONtx.cc.active = false;
 						
 					}
 					
@@ -1022,7 +1042,9 @@ common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "player i
 			} else {
 common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "no captions found");
 				
-				KONtx.cc.active = false;
+				// we don't need to do this since onActivate shouldn't be run multiple times per video playback request
+				// also we are only inside this condition because it is already false
+				//KONtx.cc.active = false;
 				
 			}
 			
@@ -1034,13 +1056,13 @@ common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onActivate", "no capti
 common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "onDeactivate");
         
 		KONtx.cc.active = false;
+common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "KONtx.cc.active", KONtx.cc.active);
 		
 		this[KONtx.cc.useHardware ? "setHardwareState" : "setSoftwareState"](false);
 		
+		//
 		this.unbindTimeIndexChange();
-		
 		this.unbindStateChange();
-		
 		this.unbindControlStop();
 		
     },
@@ -1078,24 +1100,16 @@ common.debug.level[4] && KONtx.cc.log("CaptionsOverlay", "onDataReceived", commo
     onPlayerStateChange: function (event) {
         
         var playerStates = KONtx.cc.playerStates;
-        
+common.debug.level[1] && KONtx.cc.log("CaptionsOverlay", "onPlayerStateChange", KONtx.cc.playerStatesLegend[event.payload.newState]);
+		
         switch (event.payload.newState) {
-            
-			case playerStates.BUFFERING:
+			//case playerStates.BUFFERING:
 			case playerStates.PLAY:
-common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onPlayerStateChange", KONtx.cc.playerStatesLegend[event.payload.newState]);
-				
 				this.fire("onActivate");
-				
 				break;
-				
             case playerStates.STOP:
-common.debug.level[3] && KONtx.cc.log("CaptionsOverlay", "onPlayerStateChange", KONtx.cc.playerStatesLegend[event.payload.newState]);                
-                
                 this.fire("onDeactivate");
-                
                 break;
-                
         }
         
     },

@@ -36,13 +36,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 _production = (typeof(_production) === "undefined") ? _PRODUCTION : _production;
 // < 1.5
 if (typeof(common) === "undefined") {
-	common = {};
 	platform = ((typeof(platform) === "undefined") || (platform === null)) ? {} : platform;
 }
 // < 1.5 or deviceInfo reports empty value
 if ((typeof(common) === "undefined") || ((typeof(common) !== "undefined") && (typeof(tv) !== "undefined") && ("system" in tv) && ("deviceInfo" in tv.system) && (tv.system.deviceInfo == ""))) {
 	//
-	/** platform compat *******************************************************************************************/
+	// this section is all about stubbing out the compatibility layer for the "platform" namespace
 	//
 	var defaultVendorMark = "A";
 	var defaultVendorName = "NOMATCH";
@@ -289,8 +288,10 @@ if ((typeof(common) === "undefined") || ((typeof(common) !== "undefined") && (ty
 if (typeof(common) === "undefined") {
 	(function common_compatibility_singleton() {
 		//
-		/** common compat *********************************************************************************************/
+		// this section is all about stubbing out the compatibility layer for the "common" namespace
 		//
+		common = (typeof(common) === "undefined") ? {} : common;
+		
 		common.dump = KONtx.Class.helpers.dump;
 		common.merge = KONtx.Class.helpers.merge;
 		common.clone = KONtx.Class.helpers.unlink;

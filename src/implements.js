@@ -402,17 +402,17 @@ common.debug.level[3] && KONtx.cc.log("MediaTransportOverlay", "_registerHardwar
 			
 			var owner = this;
 			
-			engineInterface.onStateChanged = function () {
-common.debug.level[1] && KONtx.cc.log("onStateChanged");
+			// this is a setter provided by tv.js
+			// we need to bind to the engineInterface scope before using or the scope within the method will be global
+			engineInterface.onStateChanged = function (payload) {
 				// we are getting a notification from the hardware
-				
 				var button = ("captionsbutton" in owner._controls) ? owner._controls.captionsbutton : null;
 				
 				if (button) {
-common.debug.level[1] && KONtx.cc.log("onStateChanged", "engineInterface.state", this.state);
+common.debug.level[1] && KONtx.cc.log("onStateChanged", "engineInterface.state", engineInterface.state);
 common.debug.level[1] && KONtx.cc.log("onStateChanged", "KONtx.cc.enabled", KONtx.cc.enabled);
 					
-					button.fire(this.state ? "onActivate" : "onDeactivate");
+					button.fire(engineInterface.state ? "onActivate" : "onDeactivate");
 					
 				}
 				
@@ -501,7 +501,11 @@ common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "_overlayActivate
 			
 			if ("captions" in this._overlay) {
 				
-				this._overlay.captions.fire("onActivate");
+				if (KONtx.cc.playerActive && (KONtx.cc.playerState == KONtx.cc.playerStates.PLAY)) {
+					
+					this._overlay.captions.fire("onActivate");
+					
+				}
 				
 			}
 			
@@ -613,12 +617,7 @@ common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "onSourceUpdated"
 						
 						button.setDisabled(false);
 						
-						// only proceed if the user button is already enabled
-						if (KONtx.cc.enabled) {
-							
-							button.fire("onActivate");
-							
-						}
+						this._overlayActivateCC();
 						
 common.debug.level[1] && KONtx.cc.log("MediaTransportOverlay", "onSourceUpdated", "onPlayPlaylistEntry", "profile user has " + (KONtx.cc.enabled ? "" : "not ") + "activated cc");
                         

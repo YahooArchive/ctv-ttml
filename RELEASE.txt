@@ -266,4 +266,9 @@
 	changed the interface construction for KONtx.cc.engineInterface and KONtx.cc.useHardware. now we perform system level checks for hardware support each time the api is called instead of only once during construction of the api. this was causing failures on some systems that reported hardware support late. also this is required to support the new design of tvAPI in our v7 products which always report captioning support late.
 0.1.15
 	encoded the ttml URL before adding to the YQL query
-	
+0.1.16
+	testing vcs integration with pm system
+0.1.17
+	changed the scope within the returned singleton inside of the onStateChanged setter
+0.1.18-0.1.20
+	upgraded to support newer 1.8 frameworks and v7 engine APIs
